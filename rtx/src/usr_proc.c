@@ -9,13 +9,33 @@
 #include "rtx.h"
 #include "uart_polling.h"
 #include "usr_proc.h"
-
-#ifdef DEBUG_0
 #include "printf.h"
-#endif /* DEBUG_0 */
+
+// TODO set group id
+#define test_printf(...) printf("Gid_test: " __VA_ARGS__)
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
+static int proc2_work_remaining = 3;
+static int tests_run = 0, tests_failed = 0;
+const char *state = "initial";
+#define TOTAL_TESTS 10
+
+void test_assert(int expected, const char *msg, int lineno) {
+	const char *status = expected ? "OK" : "FAIL";
+	if (!expected) {
+		++tests_failed;
+	}
+	test_printf("test %d %s\n", ++tests_run, status);
+#ifdef DEBUG_0
+	printf("Assertion failed in %s:%d: %s\n", __FILE__, lineno, msg);
+#endif
+}
+
+#define TEST_ASSERT(expected) \
+	test_assert(!!(expected), #expected, __LINE__); \
+
+#define TEST_EXPECT(expected, actual) TEST_ASSERT((actual) == (expected));
 
 void set_test_procs() {
 	int i;
@@ -29,60 +49,52 @@ void set_test_procs() {
 	g_test_procs[1].mpf_start_pc = &proc2;
 }
 
-
-/**
- * @brief: a process that prints 5x6 uppercase letters
- *         and then yields the cpu.
- */
-void proc1(void)
+static void state_transition(const char *from, const char *to)
 {
-	int i = 0;
-	int ret_val = 10;
-	int x = 0;
+	TEST_EXPECT(state == from);
+	state = to;
+}
 
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart1_put_string("\n\r");
-			
-			if ( i%30 == 0 ) {
-				ret_val = release_processor();
-#ifdef DEBUG_0
-				printf("proc1: ret_val=%d\n", ret_val);
-			
-#endif /* DEBUG_0 */
-			}
-			for ( x = 0; x < 500000; x++); // some artifical delay
-		}
-		uart1_put_char('A' + i%26);
-		i++;
-		
+static void infinite_loop(void)
+{
+	for (;;) {
+		release_processor();
 	}
 }
 
+#define PROC1_PID 0
+#define PROC2_PID 1
 /**
- * @brief: a process that prints 5x6 numbers
- *         and then yields the cpu.
+ * @brief: a process that tests the RTX API
+ */
+void proc1(void)
+{
+	// int release_processor();
+	// This primitive transfers the control to the RTX (the calling process voluntarily releases
+	// the processor). The invoking process remains ready to execute and is put at the end of the
+	// ready queue of the same priority. Another process may possibly be selected for execution.
+	state_transition("initial", "FIFO scheduling")
+	assert(proc2_work_remaining == 3);
+	for (int i = 2; i >= 0; --i) {
+		release_processor();
+		assert(proc2_work_remaining == i);
+	}
+
+	state_transition("FIFO scheduling", "...");
+	;
+
+	infinite_loop();
+}
+
+/**
+ * @brief: a helper process to proc1
  */
 void proc2(void)
 {
-	int i = 0;
-	int ret_val = 20;
-	int x = 0;
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart1_put_string("\n\r");
-			
-			if ( i%30 == 0 ) {
-				ret_val = release_processor();
-#ifdef DEBUG_0
-				printf("proc2: ret_val=%d\n", ret_val);
-			
-#endif /* DEBUG_0 */
-			}
-			for ( x = 0; x < 500000; x++); // some artifical delay
-		}
-		uart1_put_char('0' + i%10);
-		i++;
-		
+	while (proc2_work_remaining > 0) {
+		--proc2_work_remaining;
+		release_processor();
 	}
+
+	infinite_loop();
 }
