@@ -1,8 +1,10 @@
 #include "linked_list.h"
 #include <assert.h>
+#include <string.h>
 
 void test_my_list(void) {
 	LL_DECLARE(my_list, int, 10);
+	LL_DECLARE(my_list_copy, int, 10);
 
     assert(LL_SIZE(my_list) == 0);
     // Push 0 to 4 to front
@@ -15,6 +17,10 @@ void test_my_list(void) {
     }
     // List is: 4 3 2 1 0 5 6 7 8 9
     assert(LL_SIZE(my_list) == 10);
+
+	assert(sizeof(my_list) == sizeof(my_list_copy));
+	memcpy(&my_list_copy, &my_list, sizeof(my_list_copy));
+
     {
         int sum = 0;
 		int x; // must declare before LL_FOREACH
@@ -34,6 +40,9 @@ void test_my_list(void) {
             assert(x == i);
         }
     }
+
+	assert(LL_SIZE(my_list) == 0);
+	assert(LL_SIZE(my_list_copy) == 10);
 }
 
 int main(void) {
