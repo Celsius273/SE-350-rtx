@@ -17,6 +17,7 @@ void test_my_list(void) {
     assert(LL_SIZE(my_list) == 10);
     {
         int sum = 0;
+		int x; // must declare before LL_FOREACH
         LL_FOREACH(x, my_list) {
             sum += x;
         }
