@@ -9,11 +9,20 @@ void test_my_list(void) {
     assert(LL_SIZE(my_list) == 0);
     // Push 0 to 4 to front
     for (int i = 0; i < 5; ++i) {
-        LL_PUSH_FRONT(my_list, i);
+		// Either syntax works
+		if (i % 2 == 0) {
+			LL_PUSH_FRONT(my_list, i);
+		} else {
+			LL_PUSH_FRONT(my_list) = i;
+		}
     }
     // List is: 4 3 2 1 0
     for (int i = 5; i < 10; ++i) {
-        LL_PUSH_BACK(my_list, i);
+		if (i % 2 == 0) {
+			LL_PUSH_BACK(my_list, i);
+		} else {
+			LL_PUSH_BACK(my_list) = i;
+		}
     }
     // List is: 4 3 2 1 0 5 6 7 8 9
     assert(LL_SIZE(my_list) == 10);
