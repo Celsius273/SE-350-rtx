@@ -20,11 +20,13 @@ typedef struct ll_header {
 size_t ll_size_impl(const ll_header_t *header);
 #define LL_SIZE(list) ll_size_impl(&(list).header)
 
-int ll_push_front_impl(ll_header_t *header);
-#define LL_PUSH_FRONT(list, value) ((list).values[ll_push_front_impl(&(list).header)] = (value))
+int ll_push_front_impl(ll_header_t *header, int capacity);
+#define LL_PUSH_FRONT(list, value) \
+	((list).values[ll_push_front_impl(&(list).header, LL_CAPACITY((list)))] = (value))
 
-int ll_push_back_impl(ll_header_t *header);
-#define LL_PUSH_BACK(list, value) ((list).values[ll_push_back_impl(&(list).header)] = (value))
+int ll_push_back_impl(ll_header_t *header, int capacity);
+#define LL_PUSH_BACK(list, value) \
+	((list).values[ll_push_back_impl(&(list).header, LL_CAPACITY((list)))] = (value))
 
 int ll_pop_front_impl(ll_header_t *header);
 #define LL_POP_FRONT(list) ((list).values[ll_pop_front_impl(&(list).header)])
