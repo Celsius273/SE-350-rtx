@@ -14,6 +14,7 @@
 #define MEDIUM  1
 #define LOW     2
 #define LOWEST  3
+#define NULL_PRIO 4
 
 /* ----- Types ----- */
 typedef unsigned int U32;

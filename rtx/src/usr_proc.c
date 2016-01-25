@@ -7,6 +7,7 @@
  */
 
 #include "rtx.h"
+#include "k_process.h"
 #include "uart_polling.h"
 #include "usr_proc.h"
 #include "printf.h"
@@ -55,7 +56,7 @@ static void test_transition(const char *from, const char *to)
 	test_state = to;
 }
 
-static void infinite_loop(void)
+void infinite_loop(void)
 {
 	for (;;) {
 		release_processor();
@@ -99,7 +100,6 @@ void *test_mem_request(void) {
 	test_mem_front = cur;
 }
 
-#define NULL_PID 0
 #define PROC1_PID 1
 #define PROC2_PID 2
 #define PROC3_PID 3

@@ -17,6 +17,8 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_process.h"
+// FIXME are awe allowed to refer to user code from kernel?
+#include "usr_proc.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -31,7 +33,8 @@ U32 g_switch_flag = 0;          /* whether to continue to run the process before
 				/* this value will be set by UART handler */
 
 /* process initialization table */
-PROC_INIT g_proc_table[NUM_TEST_PROCS];
+#define NUM_PROCS (NUM_TEST_PROCS + 1)
+PROC_INIT g_proc_table[NUM_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 /**
@@ -45,14 +48,20 @@ void process_init()
   
         /* fill out the initialization table */
 	set_test_procs();
+	int num_procs = 0;
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
-		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
-		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
+		g_proc_table[num_procs++] = g_test_procs[i];
 	}
+	g_proc_table[num_procs++] = {
+		.m_pid = NULL_PID,
+		.m_priority = NULL_PRIO,
+		.m_stack_size = 0x100,
+		.mpf_start_pc = &infinite_loop,
+	};
   
+	assert(NUM_PROCS == num_procs);
 	/* initilize exception stack frame (i.e. initial context) for each process */
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+	for ( i = 0; i < NUM_PROCS; i++ ) {
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
