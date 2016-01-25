@@ -19,6 +19,9 @@
 #include "k_process.h"
 // FIXME are awe allowed to refer to user code from kernel?
 #include "usr_proc.h"
+// for NULL_PRIO
+#include "rtx.h"
+#include <assert.h>
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -52,7 +55,7 @@ void process_init()
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[num_procs++] = g_test_procs[i];
 	}
-	g_proc_table[num_procs++] = {
+	g_proc_table[num_procs++] = (PROC_INIT) {
 		.m_pid = NULL_PID,
 		.m_priority = NULL_PRIO,
 		.m_stack_size = 0x100,

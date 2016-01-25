@@ -28,6 +28,12 @@ typedef struct proc_init
 	void (*mpf_start_pc) ();/* entry point of the process */    
 } PROC_INIT;
 
+#ifdef DEBUG_0
+#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
+#else
+#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
+#endif /* DEBUG_0 */
+
 /* ----- RTX User API ----- */
 #define __SVC_0  __svc_indirect(0)
 

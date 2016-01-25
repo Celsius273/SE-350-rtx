@@ -11,6 +11,7 @@
 #include "uart_polling.h"
 #include "usr_proc.h"
 #include "printf.h"
+#include <assert.h>
 
 // TODO set group id
 #define test_printf(...) printf("Gid_test: " __VA_ARGS__)
@@ -32,17 +33,17 @@ void test_assert(int expected, const char *msg, int lineno) {
 #endif
 }
 
-#define TEST_EXPECT(expected) \
+#define TEST_ASSERT(expected) \
 	test_assert(!!(expected), #expected, __LINE__); \
 
-#define TEST_EXPECT(expected, actual) TEST_EXPECT((expected) == (actual));
+#define TEST_EXPECT(expected, actual) TEST_ASSERT((expected) == (actual));
 
 void set_test_procs() {
 	int i;
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_test_procs[i].m_pid=(U32)(i+1);
 		g_test_procs[i].m_priority=LOWEST;
-		g_test_procs[i].m_stack_size=0x100;
+		g_test_procs[i].m_stack_size=USR_SZ_STACK;
 	}
   
 	g_test_procs[0].mpf_start_pc = &proc1;
@@ -65,7 +66,7 @@ void infinite_loop(void)
 
 typedef struct mem_block {
 	struct mem_block *volatile next;
-	volatile char data[128 - sizeof(next)];
+	volatile char data[128 - sizeof(struct mem_block *)];
 } mem_block_t;
 mem_block_t *volatile test_mem_front = NULL;
 char test_mem_blocks = 0;
@@ -98,6 +99,7 @@ void *test_mem_request(void) {
 
 	cur->next = test_mem_front;
 	test_mem_front = cur;
+	return (void *) cur->data;
 }
 
 #define PROC1_PID 1
@@ -115,7 +117,7 @@ void proc1(void)
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
 	// the processor). The invoking process remains ready to execute and is put at the end of the
 	// ready queue of the same priority. Another process may possibly be selected for execution.
-	test_transition("initial", "FIFO scheduling")
+	test_transition("initial", "FIFO scheduling");
 	assert(proc2_work_remaining == 3);
 	for (int i = 2; i >= 0; --i) {
 		TEST_EXPECT(0, release_processor());
@@ -166,7 +168,7 @@ void proc1(void)
 		test_mem_release();
 		++blocks;
 	}
-	TEST_EXPECT(blocks >= 30);
+	TEST_ASSERT(blocks >= 30);
 	test_transition("Count blocks", "Test finished");
 
 	TEST_EXPECT(0, changed_bytes);
@@ -216,7 +218,7 @@ void proc2(void)
 	++finished_procs;
 	test_mem_release();
 
-	TEST_EXPECT(0);
+	TEST_ASSERT(0);
 }
 
 /**
@@ -245,5 +247,5 @@ void proc3(void)
 	++finished_procs;
 	TEST_EXPECT(0, release_processor());
 
-	TEST_EXPECT(0);
+	TEST_ASSERT(0);
 }
