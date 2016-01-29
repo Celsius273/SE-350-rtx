@@ -11,6 +11,7 @@
 #define K_PROCESS_H_
 
 #include "k_rtx.h"
+#include "linked_list.h"
 
 /* ----- Definitions ----- */
 
@@ -25,5 +26,13 @@ int k_release_process(void);           /* kernel release_process function */
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */
 extern void set_test_procs(void);      /* test process initial set up */
+
+/*set the state of the p_pcb to BLOCKED_ON_RESOURCE and enqueue it in the blocked_on_resource queue*/
+void k_enqueue_blocked_on_resource_process(PCB *p_pcb);
+
+/*dequeue the next available process in blocked_on_resource queue*/
+void k_dequeue_blocked_on_resource_process();
+
+void k_enqueue_ready_process(PCB *p_pcb);
 
 #endif /* ! K_PROCESS_H_ */
