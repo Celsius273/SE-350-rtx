@@ -15,5 +15,6 @@ void proc3(void);
 void proc4(void);
 void proc5(void);
 void proc6(void);
+void infinite_loop(void);
 
 #endif /* USR_PROC_H_ */

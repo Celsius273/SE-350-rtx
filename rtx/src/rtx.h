@@ -14,6 +14,7 @@
 #define MEDIUM  1
 #define LOW     2
 #define LOWEST  3
+#define NULL_PRIO 4
 
 /* ----- Types ----- */
 typedef unsigned int U32;
@@ -26,6 +27,12 @@ typedef struct proc_init
 	int m_stack_size;       /* size of stack in words */
 	void (*mpf_start_pc) ();/* entry point of the process */    
 } PROC_INIT;
+
+#ifdef DEBUG_0
+#define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
+#else
+#define USR_SZ_STACK 0x100         /* user proc stack size 218B  */
+#endif /* DEBUG_0 */
 
 /* ----- RTX User API ----- */
 #define __SVC_0  __svc_indirect(0)

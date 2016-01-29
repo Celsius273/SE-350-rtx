@@ -16,6 +16,7 @@
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
+#define NULL_PID 0                     /* PID of null process */
 
 /* ----- Functions ----- */
 
