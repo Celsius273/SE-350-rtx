@@ -5,6 +5,7 @@
 void test_my_list(void) {
 	LL_DECLARE(my_list, int, 10);
 	LL_DECLARE(my_list_copy, int, 10);
+	LL_DECLARE(my_list_arr[3], int, 10);
 
 	assert(LL_SIZE(my_list) == 0);
 	// Push 0 to 4 to front
@@ -29,6 +30,9 @@ void test_my_list(void) {
 
 	assert(sizeof(my_list) == sizeof(my_list_copy));
 	memcpy(&my_list_copy, &my_list, sizeof(my_list_copy));
+	for (int i = 0; i < 3; ++i) {
+		memcpy(&my_list_arr[i], &my_list, sizeof(my_list_arr[i]));
+	}
 
 	{
 		int sum = 0;
@@ -52,6 +56,9 @@ void test_my_list(void) {
 
 	assert(LL_SIZE(my_list) == 0);
 	assert(LL_SIZE(my_list_copy) == 10);
+	for (int i = 0; i < 3; ++i) {
+		assert(LL_SIZE(my_list_arr[i]) == 10);
+	}
 }
 
 int main(void) {

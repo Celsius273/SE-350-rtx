@@ -187,7 +187,7 @@ void k_enqueue_blocked_on_resource_process(PCB* p_pcb)
 		return;
 	}
 	*/
-	LL_PUSH_BACK(p_pcb, p_blocked_on_resource_queue);
+	LL_PUSH_BACK(p_blocked_on_resource_queue, p_pcb);
 }
 
 /*dequeue the next available process in blocked_on_resource queue*/
@@ -196,7 +196,7 @@ PCB* k_dequeue_blocked_on_resource_process(void)
 	PCB *p_pcb = NULL;
 	for(int i = 0; i < NUM_PRIORITIES; i++) {
 		if(!(LL_SIZE(g_blocked_on_resource_queue[i]) == 0)){
-			p_pcb = (PCB *)LL_POP_FRONT(g_blocked_on_memory_queue[i]);
+			p_pcb = (PCB *)LL_POP_FRONT(g_blocked_on_resource_queue[i]);
 			break;
 		}
 	}
