@@ -15,9 +15,9 @@
 
 // TODO set these constants
 #define NUM_TESTS 123
-#define GROUP_ID 099
+#define GROUP_ID "099"
 
-#define test_printf(...) printf("G" #GROUP_ID "_test: " __VA_ARGS__)
+#define test_printf(...) printf("G" GROUP_ID "_test: " __VA_ARGS__)
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
@@ -115,7 +115,7 @@ void *test_mem_request(void) {
 void proc1(void)
 {
 	test_printf("START\n");
-	test_printf("total " #NUM_TESTS " tests\n");
+	test_printf("total %d tests\n", NUM_TESTS);
 
 	// int release_processor();
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
