@@ -48,24 +48,24 @@ int ll_push_front_impl(ll_header_t *header);
  * LL_PUSH_FRONT(list) = value;
  * Push value onto the front of the list.
  */
-#define LL_PUSH_FRONT(list) ((list).values[ll_push_front_impl(&(list).header)])
+#define LL_PUSH_FRONT_(list) ((list).values[ll_push_front_impl(&(list).header)])
 /**
  * LL_PUSH_FRONT(list, value);
  * Push value onto the front of the list.
  */
-#define LL_PUSH_FRONT(list, value) (LL_PUSH_FRONT(list) = (value))
+#define LL_PUSH_FRONT(list, value) (LL_PUSH_FRONT_(list) = (value))
 
 int ll_push_back_impl(ll_header_t *header);
 /**
  * LL_PUSH_BACK(list) = value;
  * Push value onto the back of the list.
  */
-#define LL_PUSH_BACK(list) ((list).values[ll_push_back_impl(&(list).header)])
+#define LL_PUSH_BACK_(list) ((list).values[ll_push_back_impl(&(list).header)])
 /**
  * LL_PUSH_BACK(list, value);
  * Push value onto the back of the list.
  */
-#define LL_PUSH_BACK(list, value) (LL_PUSH_BACK(list) = (value))
+#define LL_PUSH_BACK(list, value) (LL_PUSH_BACK_(list) = (value))
 
 int ll_pop_front_impl(ll_header_t *header);
 /**

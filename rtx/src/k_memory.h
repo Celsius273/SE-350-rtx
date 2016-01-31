@@ -9,12 +9,12 @@
 #define K_MEM_H_
 
 #include "k_rtx.h"
+#include "k_process.h"
 #include "linked_list.h"
 
-struct mem_t{
+typedef struct mem_t{
 	U32 m_val;
-};
-mem_t mem_blocks[30];
+} mem_t;
 
 /* ----- Definitions ----- */
 #define RAM_END_ADDR 0x10008000
@@ -23,7 +23,6 @@ mem_t mem_blocks[30];
 /* This symbol is defined in the scatter file (see RVCT Linker User Guide) */
 extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
 extern PCB **gp_pcbs;
-extern PROC_INIT g_proc_table[NUM_TEST_PROCS];
 
 /* ----- Functions ------ */
 void memory_init(void);

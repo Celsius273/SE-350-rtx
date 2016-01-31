@@ -42,7 +42,6 @@ ll_header_t g_blocked_on_resource_queue[NUM_PRIORITIES];
 ll_header_t g_ready_queue[NUM_PRIORITIES];
 
 /* process initialization table */
-#define NUM_PROCS (NUM_TEST_PROCS + 1)
 PROC_INIT g_proc_table[NUM_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
@@ -191,7 +190,7 @@ void k_enqueue_blocked_on_resource_process(PCB* p_pcb)
 }
 
 /*dequeue the next available process in blocked_on_resource queue*/
-PCB* k_dequeue_blocked_on_resource_process()
+PCB* k_dequeue_blocked_on_resource_process(void)
 {
 	PCB *p_pcb = NULL:
 	for(int i = 0; i < NUM_PRIORITIES; i++) {

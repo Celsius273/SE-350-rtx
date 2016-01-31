@@ -347,7 +347,7 @@
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <VariousControls>
-              <MiscControls>--c99</MiscControls>
+              <MiscControls>--c99 --gnu</MiscControls>
               <Define>DEBUG_0</Define>
               <Undefine></Undefine>
               <IncludePath></IncludePath>

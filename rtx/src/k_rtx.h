@@ -14,7 +14,6 @@
 #define RTX_OK  0
 
 #define NULL 0
-#define NUM_TEST_PROCS 6
 #define NUM_MEM_BLOCKS 30
 #define MEM_BLOCK_SIZE 128
 #define MSG_HEADER_OFFSET 16

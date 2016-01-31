@@ -11,12 +11,17 @@
 #define K_PROCESS_H_
 
 #include "k_rtx.h"
+#include "rtx.h"
 #include "linked_list.h"
 
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
 #define NULL_PID 0                     /* PID of null process */
+
+#define NUM_PROCS (NUM_TEST_PROCS + 1)
+extern PROC_INIT g_proc_table[NUM_PROCS];
+extern PCB *gp_current_process; /* always point to the current RUN process */
 
 /* ----- Functions ----- */
 
@@ -32,7 +37,7 @@ extern void set_test_procs(void);      /* test process initial set up */
 void k_enqueue_blocked_on_resource_process(PCB *p_pcb);
 
 /*dequeue the next available process in blocked_on_resource queue*/
-void k_dequeue_blocked_on_resource_process();
+void k_dequeue_blocked_on_resource_process(void);
 
 void k_enqueue_ready_process(PCB *p_pcb);
 

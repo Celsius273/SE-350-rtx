@@ -13,7 +13,7 @@ void test_my_list(void) {
 		if (i % 2 == 0) {
 			LL_PUSH_FRONT(my_list, i);
 		} else {
-			LL_PUSH_FRONT(my_list) = i;
+			LL_PUSH_FRONT_(my_list) = i;
 		}
 	}
 	// List is: 4 3 2 1 0
@@ -21,7 +21,7 @@ void test_my_list(void) {
 		if (i % 2 == 0) {
 			LL_PUSH_BACK(my_list, i);
 		} else {
-			LL_PUSH_BACK(my_list) = i;
+			LL_PUSH_BACK_(my_list) = i;
 		}
 	}
 	// List is: 4 3 2 1 0 5 6 7 8 9

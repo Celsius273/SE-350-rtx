@@ -19,6 +19,7 @@ U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
 
 //ll_header_t g_heap; /*list of available memory blocks*/
 
+mem_t mem_blocks[30];
 LL_DECLARE(g_heap, mem_t*, 30);
 U8 *gp_heap_begin_addr;
 U8 *gp_heap_end_addr;
@@ -77,7 +78,7 @@ void memory_init(void)
 	gp_heap_begin_addr = p_end;
 
   	for( i = 0; i < NUM_MEM_BLOCKS; i++) {
-	    LL_PUSH_FRONT(g_heap) = &blocks[i];
+	    LL_PUSH_FRONT_(g_heap) = &mem_blocks[i];
 	    p_end += MEM_BLOCK_SIZE;
 	}
 
@@ -119,6 +120,23 @@ void *k_request_memory_block(void)
 	return (void *)p_mem_blk;
 }
 
+int k_release_memory_block_valid(void *p_mem_blk)
+{
+  mem_t *p_mem = NULL;
+  if(p_mem_blk == NULL){
+    return RTX_ERR;
+  }
+
+  if((U8* )p_mem < gp_heap_begin_addr || (U8 *)p_mem > gp_heap_end_addr) {
+    return RTX_ERR;
+  }
+  if(((U8* )p_mem - gp_heap_begin_addr) % MEM_BLOCK_SIZE != 0){
+    return RTX_ERR;
+  }
+  LL_PUSH_BACK(g_heap, p_mem);
+  return RTX_OK;
+}
+
 int k_release_memory_block(void *p_mem_blk) {
 	//if memory block pointer is not valid return error
 	if(k_release_memory_block_valid(p_mem_blk) == RTX_OK){
@@ -133,21 +151,4 @@ int k_release_memory_block(void *p_mem_blk) {
 		return RTX_ERR;
 	}
 	return RTX_OK;
-}
-
-int k_release_memory_block_valid(void *p_mem_blk)
-{
-  mem_t *p_mem = NULL;
-  if(p_mem_blk == NULL){
-    return RTX_ERR;
-  }
-
-  if((U8* )p_mem < gp_heap_begin_addr || (U8 *)p_mem > gp_heap_end_addr) {
-    return RTX_ERR;
-  }
-  if(((U8* )p_node - gp_heap_begin_addr) % MEM_BLOCK_SIZE != 0){
-    return RTX_ERR;
-  }
-  LL_PUSH_BACK(g_heap, p_node)
-  return RTX_OK;
 }
