@@ -37,7 +37,7 @@ extern void set_test_procs(void);      /* test process initial set up */
 void k_enqueue_blocked_on_resource_process(PCB *p_pcb);
 
 /*dequeue the next available process in blocked_on_resource queue*/
-void k_dequeue_blocked_on_resource_process(void);
+PCB *k_dequeue_blocked_on_resource_process(void);
 
 void k_enqueue_ready_process(PCB *p_pcb);
 

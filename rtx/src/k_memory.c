@@ -142,7 +142,7 @@ int k_release_memory_block(void *p_mem_blk) {
 	if(k_release_memory_block_valid(p_mem_blk) == RTX_OK){
 		PCB *p_blocked_pcb = k_dequeue_blocked_on_resource_process();
 		if(p_blocked_pcb != NULL){
-			p_blocked_pcb->m_state = READY;
+			p_blocked_pcb->m_state = RDY;
 			k_enqueue_ready_process(p_blocked_pcb);
 			return k_release_processor();
 		}

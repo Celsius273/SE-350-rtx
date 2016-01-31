@@ -15,6 +15,7 @@
 #define LOW     2
 #define LOWEST  3
 #define NULL_PRIO 4
+#define NUM_PRIORITIES 5
 
 /* ----- Types ----- */
 typedef unsigned int U32;
