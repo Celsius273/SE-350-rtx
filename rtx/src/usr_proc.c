@@ -13,8 +13,11 @@
 #include "printf.h"
 #include <assert.h>
 
-// TODO set group id
-#define test_printf(...) printf("Gid_test: " __VA_ARGS__)
+// TODO set these constants
+#define NUM_TESTS 123
+#define GROUP_ID 099
+
+#define test_printf(...) printf("G" #GROUP_ID "_test: " __VA_ARGS__)
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
@@ -112,6 +115,7 @@ void *test_mem_request(void) {
 void proc1(void)
 {
 	test_printf("START\n");
+	test_printf("total " #NUM_TESTS " tests\n");
 
 	// int release_processor();
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
@@ -176,6 +180,9 @@ void proc1(void)
 
 	test_printf("%d/%d tests OK\n", tests_ran - tests_failed, tests_ran);
 	test_printf("%d/%d tests FAIL\n", tests_failed, tests_ran);
+	// This invalidates tests_ran, but since all processes have reached
+	//   infinite_loop(), everything is okay.
+	TEST_EXPECT(tests_ran, NUM_TESTS);
 	test_printf("END\n");
 	infinite_loop();
 }
