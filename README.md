@@ -35,3 +35,18 @@ Most tests run in the lowest-numbered process(es) possible.
 For example, the only 2 tests in process 3 are the round-robin scheduling test and the resource contention tests.
 FIFO-semantics for round robin scheduling are only noticeable when there are more than 2 processes, and the resource
   contention tests need at least 2 processes blocked on resources and 1 running process.
+
+## Linear list
+To help implement the queueing for processes and for memory management, there's a generic linear list.
+By pulling out the queue logic, the queue logic can be coded once and debugged once, separately from the rest of the kernel.
+
+The linear list is like a double-ended queue with a `LL_FOREACH` operation.
+It supports the basic operations:
+- `LL_DECLARE`: Declare and statically initialize a linear list or array of linear lists.
+- `LL_CAPACITY`: Return the maximum capacity of the linear list.
+- `LL_SIZE`: Return the current size of the linear list, the number of pushes minus the number of pops.
+- `LL_{PUSH,POP}_{FRONT,BACK}`: Push/pop an element to/from either end of the list.
+- `LL_FOREACH`: Execute a statement for each element from the front to the back.
+In addition, the list can be copied using the standard function `memcpy`.
+
+The list is statically allocated so it can be used for memory management.
