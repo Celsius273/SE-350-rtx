@@ -12,7 +12,7 @@
 
 #include "k_rtx.h"
 #include "rtx.h"
-#include "linked_list.h"
+#include "list.h"
 
 /* ----- Definitions ----- */
 

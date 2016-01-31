@@ -1,14 +1,16 @@
-#ifndef LINKED_LIST_H_
-#define LINKED_LIST_H_
+#ifndef LIST_H_
+#define LIST_H_
 
 #include <stddef.h>
 
 /*
- * The header of a generic list.
+ * The header of a generic linear list.
  * This is for internal use.
- * Each item is either in the used or free list.
- * If the used_front == -1 but used_back != -1, then capacity is used_back and the list is uninitialized.
- * Otherwise, used_back == -1 exactly when used_front == -1.
+ *
+ * Every list conceptually has a linear shape:
+ * [front, item, item, ..., item, item, back]
+ *
+ * The implementation uses a deque.
  */
 typedef struct ll_header {
 	int start, size;

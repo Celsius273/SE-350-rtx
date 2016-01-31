@@ -10,7 +10,7 @@
 
 #include "k_rtx.h"
 #include "k_process.h"
-#include "linked_list.h"
+#include "list.h"
 
 typedef struct mem_t{
 	U32 m_val;

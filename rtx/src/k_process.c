@@ -173,7 +173,7 @@ int k_release_processor(void)
 /*set the state of the p_pcb to BLOCKED_ON_RESOURCE and enqueue it in the blocked_on_resource queue*/
 void k_enqueue_blocked_on_resource_process(PCB* p_pcb)
 {
-	/*queue_t can be implement using the generic linked list*/
+	/*queue_t can be implement using the generic linear list*/
 	LL_DECLARE(p_blocked_on_resource_queue, PCB*, 6);
 	if(p_pcb == NULL){
 		return;
