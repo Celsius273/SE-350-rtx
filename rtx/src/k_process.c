@@ -36,10 +36,10 @@ U32 g_switch_flag = 0;          /* whether to continue to run the process before
 																/* this value will be set by UART handler */
 
 /* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
-ll_header_t g_blocked_on_resource_queue[NUM_PRIORITIES];
+LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], PCB*, NUM_PROCS);
 
 /* array of list of processes that are in READY state, one for each priority */
-ll_header_t g_ready_queue[NUM_PRIORITIES];
+LL_DECLARE(g_ready_queue[NUM_PRIORITIES], PCB*, NUM_PROCS);
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCS];
@@ -206,6 +206,6 @@ PCB* k_dequeue_blocked_on_resource_process(void)
 void k_enqueue_ready_process(PCB *p_pcb)
 {
 	/* enqueue the PCB in the ready queue corresponding to its priority */
-    LL_PUSH_BACK(p_pcb, &g_ready_queue[p_pcb->m_priority]);
+    LL_PUSH_BACK(g_ready_queue[p_pcb->m_priority], p_pcb);
 
 }
