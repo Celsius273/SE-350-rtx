@@ -38,6 +38,7 @@ FIFO-semantics for round robin scheduling are only noticeable when there are mor
 
 ## Linear list
 To help implement the queueing for processes and for memory management, there's a generic linear list.
+The linear list can store items of any type that supports the `sizeof` operator.
 By pulling out the queue logic, the queue logic can be coded once and debugged once, separately from the rest of the kernel.
 
 The linear list is like a double-ended queue with a `LL_FOREACH` operation.
@@ -49,4 +50,11 @@ It supports the basic operations:
 - `LL_FOREACH`: Execute a statement for each element from the front to the back.
 In addition, the list can be copied using the standard function `memcpy`.
 
-The list is statically allocated so it can be used for memory management.
+The list is statically allocated because the memory management would also need to use it.
+In addition, a zero-initialized list is empty, making it easy to allocate arrays of empty lists.
+This makes it unnecessary to initialize lists to the empty state.
+
+To allow the same functions to work on queues with different capacity and type, the interface uses macros.
+At each call site, the macros perform type and capacity checks.
+Unfortunately, in C, there are no template functions, so macros are the only way to perform these checks.
+This makes using the lists less error-prone.
