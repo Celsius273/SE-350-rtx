@@ -15,7 +15,7 @@
 
 // TODO set these constants
 #define NUM_TESTS 123
-#define GROUP_ID "099"
+#define GROUP_ID "004"
 
 #define test_printf(...) printf("G" GROUP_ID "_test: " __VA_ARGS__)
 
