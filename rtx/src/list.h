@@ -96,14 +96,36 @@ int ll_back_impl(ll_header_t *header, int capacity);
 #define LL_BACK(list) ((list).values[ll_back_impl(&(list).header, LL_CAPACITY((list)))])
 
 /**
+ * Internal use.
+ * Return the index-th value of the list.
+ * index is evaluated exactly once.
+ */
+#define LL_AT_(list, index) ((list).values[((list).header.start + (index)) % LL_CAPACITY((list))])
+
+/**
  * LL_FOREACH(x, list) ...
  * Perform a for-loop over the list, assigning each value to x.
  */
 #define LL_FOREACH(x, list) \
 	for ( \
 		int x ## _index = 0; \
-		x ## _index != LL_SIZE((list)) && ((x = (list).values[((list).header.start + x ## _index) % LL_CAPACITY((list))]), 1); \
+		x ## _index != LL_SIZE((list)) && ((x = LL_AT_((list), x ## _index)), 1); \
 		++x ## _index \
 	)
+
+/**
+ * LL_REMOVE(list, value);
+ * Remove all instances of value from list.
+ * This takes O(n) time because it copies every element of the list back.
+ */
+#define LL_REMOVE(list, value) do { \
+	int dst = 0; \
+	for (int src = 0; src != LL_SIZE((list)); ++src) {\
+		if (LL_AT_((list), src) != value) { \
+			LL_AT_((list), dst++) = LL_AT_((list), src); \
+		} \
+	} \
+	LL_SIZE((list)) = dst; \
+} while (0)
 
 #endif
