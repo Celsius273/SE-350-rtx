@@ -56,6 +56,17 @@ void set_test_procs() {
 
 static void test_transition(const char *from, const char *to)
 {
+#ifdef DEBUG_0
+	if (from != test_state) {
+		printf(
+			"test_transition(%s, %s) expected state %s, but got %s\n",
+			from,
+			to,
+			from,
+			test_state
+		);
+	}
+#endif
 	TEST_EXPECT(from, test_state);
 	test_state = to;
 }
