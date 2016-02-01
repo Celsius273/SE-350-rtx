@@ -1,6 +1,7 @@
 #include "list.h"
 #include <assert.h>
 #include <string.h>
+// #include <stdio.h>
 
 void test_my_list(void) {
 	LL_DECLARE(my_list, int, 10);
@@ -58,7 +59,9 @@ void test_my_list(void) {
 	assert(LL_SIZE(my_list_copy) == 10);
 	for (int i = 0; i < 3; ++i) {
 		assert(LL_SIZE(my_list_arr[i]) == 10);
-	}
+	}	
+
+	// printf("Front: %d \n", LL_FRONT(my_list));
 }
 
 int main(void) {
