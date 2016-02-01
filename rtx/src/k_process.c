@@ -73,6 +73,7 @@ void process_init()
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
+		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
 		
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR  
@@ -80,6 +81,7 @@ void process_init()
 		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
 			*(--sp) = 0x0;
 		}
+
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 }
@@ -153,6 +155,16 @@ int process_switch(PCB *p_pcb_old)
  */
 int k_release_processor(void)
 {
+    PCB *p_pcb_old = NULL;
+    p_pcb_old = gp_current_process;
+    gp_current_process = scheduler();
+
+    // release_memory_for_process(p_pcb_old);
+
+    // Push p_pcb_old to end of priority queue
+
+
+
 //	PCB *p_pcb_old = NULL;
 //
 //	p_pcb_old = gp_current_process;
