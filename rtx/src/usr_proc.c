@@ -430,7 +430,9 @@ void proc6(void)
 			continue;
 		}
 
-		sort_lo = sort_hi = sort_partition(&sort_numbers[sort_lo], sort_hi - sort_lo);
+		int pivot = sort_partition(&sort_numbers[sort_lo], sort_hi - sort_lo);
+		sort_lo += pivot;
+		sort_hi = sort_lo;
 
 		if (iteration < 3) {
 			++iteration;
