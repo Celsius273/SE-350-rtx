@@ -132,26 +132,38 @@ int k_release_memory_block_valid(void *p_mem_blk)
   if(offset % MEM_BLOCK_SIZE != 0){
     return RTX_ERR;
   }
-	// TODO make this faster using an array of booleans to store if it's used
+	// Check if the memory block is already free i.e. already in the list
 	mem_t *blk;
 	LL_FOREACH(blk, g_heap) {
 		if (blk == p_mem) {
 			return RTX_ERR;
 		}
 	}
-  LL_PUSH_BACK(g_heap, p_mem);
   return RTX_OK;
 }
 
-int k_release_memory_block(void *p_mem_blk) {
-	
-	//if memory block pointer is not valid return error
+int k_release_memory_block(void *p_mem_blk)
+{
+	//if memory block pointer being released is valid
 	if(k_release_memory_block_valid(p_mem_blk) == RTX_OK){
-		PCB *p_blocked_pcb = k_dequeue_blocked_on_resource_process();
-		if(p_blocked_pcb != NULL){
-			p_blocked_pcb->m_state = RDY;
-			k_enqueue_ready_process(p_blocked_pcb);
-			return k_release_processor();
+    mem_t *p_mem = (mem_t *)p_mem_blk;
+    LL_PUSH_BACK(g_heap, p_mem);
+
+    //get PCB of the next highest-priority blocked process
+    PCB *p_unblocked_pcb;
+		PCB *p_blocked_pcb = k_peek_blocked_on_resource_front();
+
+    //enqueue the popped PCB to the g_ready_queue;
+    if(p_blocked_pcb != NULL){
+      if(p_blocked_pcb->m_priority > gp_current_process){
+        p_unblocked_pcb = k_dequeue_blocked_on_resource_process();
+      }
+      else{
+        return RTX_OK;
+      }
+			p_blocked_pcb->m_state = RDY;  //update the process state to RDY
+			k_enqueue_ready_process(p_blocked_pcb);  //enqueue the process in ready queue
+      return k_release_processor(); //call release processor
 		}
 	}
 	else{
