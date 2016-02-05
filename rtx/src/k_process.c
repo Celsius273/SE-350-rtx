@@ -236,7 +236,11 @@ int k_enqueue_ready_process(PCB *p_pcb)
 	
 
 int set_process_priority(int process_id, int priority) {
-	
+	// TODO check if this is correct, according to the spec.
+	// "The priority of the null process may not be changed from level 4"
+	if (process_id == NULL_PID && priority == NULL_PRIO) {
+		return RTX_OK;
+	}
 	// Check for invalid values
 	if(process_id < 1 || process_id >= NUM_PROCS || priority < 0 || priority >= NULL_PRIO) {
 		return RTX_ERR;
