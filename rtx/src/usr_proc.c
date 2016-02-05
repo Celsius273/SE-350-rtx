@@ -23,7 +23,7 @@
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 static int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_procs = 0;
 static int tests_ran = 0, tests_failed = 0;
-const char *test_state = "Starting tests";
+const char *test_state = "Uninitialized";
 
 void test_assert(int expected, const char *msg, int lineno) {
 	const char *status = expected ? "OK" : "FAIL";
@@ -41,6 +41,14 @@ void test_assert(int expected, const char *msg, int lineno) {
 
 #define TEST_EXPECT(expected, actual) TEST_ASSERT((expected) == (actual));
 
+static int test_release_processor_impl(const char *procname) {
+	printf("Unscheduling process %s\n", procname);
+	int ret = release_processor();
+	printf("Rescheduling process %s\n", procname);
+	return ret;
+}
+#define test_release_processor() test_release_processor_impl(__FUNCTION__)
+
 void set_test_procs() {
 	int i;
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
@@ -54,7 +62,7 @@ void set_test_procs() {
 	g_test_procs[2].mpf_start_pc = &proc3;
 }
 
-static void test_transition(const char *from, const char *to)
+static void test_transition_impl(const char *from, const char *to, int lineno)
 {
 #ifdef DEBUG_0
 	if (from != test_state) {
@@ -67,15 +75,16 @@ static void test_transition(const char *from, const char *to)
 		);
 	}
 #endif
-	TEST_EXPECT(from, test_state);
+	test_assert(from == to, "OS scheduled wrong process", lineno);
 	test_state = to;
 	printf("Testing: %s\n", test_state);
 }
+#define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
 
 void infinite_loop(void)
 {
 	for (;;) {
-		release_processor();
+		test_release_processor();
 	}
 }
 
@@ -100,6 +109,7 @@ void test_mem_release(void) {
 	}
 	--test_mem_blocks;
 
+	printf("Releasing memory block 0x%08x\n", (unsigned long) test_mem_front);
 	TEST_EXPECT(0, release_memory_block(test_mem_front));
 }
 
@@ -114,6 +124,7 @@ void *test_mem_request(void) {
 
 	cur->next = test_mem_front;
 	test_mem_front = cur;
+	printf("Requested memory block 0x%08x\n", (unsigned long) test_mem_front);
 	return (void *) cur->data;
 }
 
@@ -128,15 +139,16 @@ void proc1(void)
 {
 	test_printf("START\n");
 	test_printf("total %d tests\n", NUM_TESTS);
+	test_state = "Starting tests";
 
-	// int release_processor();
+	// int test_release_processor();
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
 	// the processor). The invoking process remains ready to execute and is put at the end of the
 	// ready queue of the same priority. Another process may possibly be selected for execution.
-	test_transition("initial", "FIFO scheduling");
+	test_transition("Starting tests", "FIFO scheduling");
 	assert(proc2_work_remaining == 3);
 	for (int i = 2; i >= 0; --i) {
-		TEST_EXPECT(0, release_processor());
+		TEST_EXPECT(0, test_release_processor());
 		TEST_EXPECT(i, proc2_work_remaining);
 		TEST_EXPECT(i, proc3_work_remaining);
 	}
@@ -173,7 +185,7 @@ void proc1(void)
 	test_mem_release();
 
 	test_transition("Set user priority (lower)", "Release processor (max priority)");
-	TEST_EXPECT(0, release_processor());
+	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Release processor (max priority)", "Resource contention (1 blocked)");
 	test_mem_request();
@@ -204,17 +216,18 @@ void proc1(void)
  */
 void proc2(void)
 {
+	printf("Started %s\n", __FUNCTION__);
 	while (proc2_work_remaining > 0) {
 		TEST_EXPECT(proc3_work_remaining, proc2_work_remaining);
 		--proc2_work_remaining;
-		TEST_EXPECT(0, release_processor());
+		TEST_EXPECT(0, test_release_processor());
 	}
 
 	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
 	test_mem_release();
 
 	test_transition("Equal priority memory unblocking", "Equal priority memory unblocked");
-	TEST_EXPECT(0, release_processor());
+	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
 	test_mem_request();
@@ -245,15 +258,16 @@ void proc2(void)
  */
 void proc3(void)
 {
+	printf("Started %s\n", __FUNCTION__);
 	while (proc3_work_remaining > 0) {
 		--proc3_work_remaining;
 		TEST_EXPECT(proc2_work_remaining, proc3_work_remaining);
-		TEST_EXPECT(0, release_processor());
+		TEST_EXPECT(0, test_release_processor());
 	}
 
 	// Since proc1 was preempted, it's at the back of the ready queue
 	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
-	release_processor();
+	test_release_processor();
 
 	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");
 	test_mem_request();
@@ -264,7 +278,7 @@ void proc3(void)
 
 	test_transition("Resource contention (1 blocked)", "Resource contention resolved");
 	++finished_procs;
-	TEST_EXPECT(0, release_processor());
+	TEST_EXPECT(0, test_release_processor());
 
 	TEST_ASSERT(0);
 }
