@@ -321,10 +321,11 @@ void proc4(void)
 				buf[i] = -1;
 			}
 			for (int i = 0; i < 32; ++i) {
-				buf[((7 * i) % 32 + 32) % 32] = i;
+				buf[((i * i) % 32 + 32) % 32] = i;
 			}
-			TEST_EXPECT(-1, buf[0]);
-			TEST_EXPECT(23, buf[7]);
+			// Find square roots mod 32
+			TEST_EXPECT(-1, buf[2]);
+			TEST_EXPECT(31, buf[1]);
 			release_memory_block(buf);
 		}
 
