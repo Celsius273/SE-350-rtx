@@ -5,50 +5,57 @@
 #include "list.h"
 #include "priority_queue.h"
 
-void push_process(pid_pq priority_queue, pid_t pid, int priority) {
+void push_process(void* pq, pid_t pid, int priority) {
+    pid_pq priority_queue = (pid_pq)pq;
     LL_PUSH_BACK(priority_queue[priority], pid);
 }
 
-pid_t pop_process(pid_pq priority_queue, int priority) {
+pid_t pop_process(void* pq, int priority) {
+    pid_pq priority_queue = (pid_pq)pq;
     if (LL_SIZE(priority_queue[priority]) == 0) {
-        return NULL;
+        return -1;
     }
     return LL_POP_FRONT(priority_queue[priority]);
 }
 
-pid_t pop_first_process(pid_pq priority_queue) {
+pid_t pop_first_process(void* pq) {
+    pid_pq priority_queue = (pid_pq)pq;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
         if (LL_SIZE(priority_queue[i]) > 0) {
             return LL_POP_FRONT(priority_queue[i]);
         }
     }
-    return NULL;
+    return -1;
 }
 
-pid_t peek_process_front(pid_pq priority_queue, int priority) {
+pid_t peek_process_front(void* pq, int priority) {
+    pid_pq priority_queue = (pid_pq)pq;
     if (LL_SIZE(priority_queue[priority]) == 0) {
-        return NULL;
+        return -1;
     }
     return LL_FRONT(priority_queue[priority]);
 }   
 
-pid_t peek_front(pid_pq priority_queue) {
+pid_t peek_front(void* pq) {
+    pid_pq priority_queue = (pid_pq)pq;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
         if (LL_SIZE(priority_queue[i]) > 0) {
             return LL_FRONT(priority_queue[i]);
         }
     }
-    return NULL;
+    return -1;
 }  
 
-pid_t peek_process_back(pid_pq priority_queue, int priority) {
+pid_t peek_process_back(void* pq, int priority) {
+    pid_pq priority_queue = (pid_pq)pq;
     if (LL_SIZE(priority_queue[priority]) == 0) {
-        return NULL;
+        return -1;
     }
     return LL_BACK(priority_queue[priority]);
 }   
 
-bool change_priority(pid_pq priority_queue, pid_t pid, int from, int to) {
+bool change_priority(void* pq, pid_t pid, int from, int to) {
+    pid_pq priority_queue = (pid_pq)pq;
     int orig_size = LL_SIZE(priority_queue[from]);
 
     LL_REMOVE(priority_queue[from], pid);
@@ -60,7 +67,9 @@ bool change_priority(pid_pq priority_queue, pid_t pid, int from, int to) {
     return true;
 }
 
-void move_process(pid_pq from_queue, pid_pq to_queue, pid_t pid) {
+void move_process(void* fq, void* tq, pid_t pid) {
+    pid_pq from_queue = (pid_pq)fq;
+    pid_pq to_queue = (pid_pq)tq;
     int orig_size;
     int priority = -1;
 
@@ -78,9 +87,9 @@ void move_process(pid_pq from_queue, pid_pq to_queue, pid_t pid) {
     }
 }
 
-/*
 // test print function
-void print_priority_queue(pid_pq priority_queue) {
+void print_priority_queue(void* pq) {
+    pid_pq priority_queue = (pid_pq)pq;
     int x;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
         printf("Priority %d:\n", i);
@@ -89,9 +98,7 @@ void print_priority_queue(pid_pq priority_queue) {
         }
     }
 }
-*/
 
-/*
 int main(void) {
     // test code
 
@@ -114,4 +121,3 @@ int main(void) {
 
     print_priority_queue(toQueue);
 }
-*/

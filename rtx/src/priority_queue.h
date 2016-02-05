@@ -24,22 +24,20 @@ typedef struct pid_list{
 
 typedef pid_list *pid_pq;
 
-void push_process(pid_pq pq, pid_t pid, int priority);
+void push_process(void* pq, pid_t pid, int priority);
 
-pid_t pop_process(pid_pq pq, int priority);
+pid_t pop_process(void* pq, int priority);
 
-pid_t pop_first_process(pid_pq pq);
+pid_t pop_first_process(void* pq);
 
-pid_t peek_process_front(pid_pq pq, int priority); 
+pid_t peek_process_front(void* pq, int priority); 
 
-pid_t peek_front(pid_pq pq);
+pid_t peek_front(void* pq);
 
-pid_t peek_process_back(pid_pq pq, int priority);
+pid_t peek_process_back(void* pq, int priority);
 
-bool change_priority(pid_pq pq, pid_t pid, int from, int to);
+bool change_priority(void* pq, pid_t pid, int from, int to);
 
-void move_process(pid_pq from_queue, pid_pq to_queue, pid_t pid);
+void move_process(void* from_queue, void* to_queue, pid_t pid);
 
-/*
-void print_priority_queue(pid_pq priority_queue);
-*/
+void print_priority_queue(void* priority_queue);
