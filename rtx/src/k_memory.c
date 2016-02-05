@@ -136,7 +136,7 @@ int k_release_memory_block_valid(void *p_mem_blk)
 	mem_t *blk;
 	LL_FOREACH(blk, g_heap) {
 		if (blk == p_mem) {
-			return RTX_ERR:
+			return RTX_ERR;
 		}
 	}
   LL_PUSH_BACK(g_heap, p_mem);
