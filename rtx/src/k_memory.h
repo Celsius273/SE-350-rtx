@@ -13,7 +13,7 @@
 #include "list.h"
 
 typedef struct mem_t{
-	U32 m_val;
+	U32 m_val[128 / 4];
 } mem_t;
 
 /* ----- Definitions ----- */
