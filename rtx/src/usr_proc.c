@@ -425,15 +425,17 @@ void proc6(void)
 {
 
 	for (int iteration = 0;; test_release_processor()) {
+		if (!(sort_lo < sort_hi)) {
+			continue;
+		}
+
+		sort_lo = sort_hi = sort_partition(&sort_numbers[sort_lo], sort_hi - sort_lo);
+
 		if (iteration < 3) {
 			++iteration;
 		} else {
 			// We want this process to run at least 3 iterations, before it's "finished".
 			++finished_proc;
-		}
-
-		if (sort_lo < sort_hi) {
-			sort_lo = sort_hi = sort_partition(&sort_numbers[sort_lo], sort_hi - sort_lo);
 		}
 	}
 }

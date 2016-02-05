@@ -13,7 +13,8 @@
 #include "list.h"
 
 typedef struct mem_t{
-	U32 m_val[128 / 4];
+	// Guarantee 8-byte alignment, the largest common alignment
+	U32 m_val[128 / 4] __attribute__ ((aligned (8)));
 } mem_t;
 
 /* ----- Definitions ----- */

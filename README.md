@@ -4,9 +4,9 @@ SE350
 University of Waterloo SE350 Operating Systems RTX Project Starter Files and Documentation
 
 ## User test processes
-There are 3 user test processes, the minimum required to test all features.
-This is within the requirement of 2-6 processes and it outputs the correct format, except without initially printing the number of tests.
-The tests were designed with debuggability in mind:
+There are 6 user test processes. The first 3 (the minimum required to test all features) behave like unit tests, testing each case of each function against the specification.
+
+The unit tests were designed with debuggability in mind:
 - The tests are easy to read.
   Each test says what it's evaluating, what process it starts from, and what process it ends at.
 - The tests have very little boilerplate.
@@ -35,6 +35,13 @@ Most tests run in the lowest-numbered process(es) possible.
 For example, the only 2 tests in process 3 are the round-robin scheduling test and the resource contention tests.
 FIFO-semantics for round robin scheduling are only noticeable when there are more than 2 processes, and the resource
   contention tests need at least 2 processes blocked on resources and 1 running process.
+
+Of the other 6 processes, the last 3 behave like normal programs, and theoretically should not interfere with the first 3.
+These simply exercise the processor and expect the correct behaviour, performing some math and some recursion (quicksort) logic.
+They have some complex behaviour, so running them in parallel will test all sorts of interleavings of processes.
+For example, the quicksort implementation does the recursion in one process and the partitioning in another.
+
+The combination of the two kinds of tests allows the first 3 processes to accurately report when and how a specific API is failing and the last 3 processes to detect more complex failures.
 
 ## Linear list
 To help implement the queueing for processes and for memory management, there's a generic linear list.
