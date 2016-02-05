@@ -8,18 +8,20 @@
 #define PRIORITY_QUEUE_H_
 
 #include <stddef.h>
+#include <stdbool.h>
 #include "list.h"
+#include "rtx.h"
+#include "k_process.h"
 
 #endif
 
-#define NUM_PROCESSES 30
-#define NUM_PRIORITIES 5
+//#define NUM_PROCESSES 4
 
 typedef int pid_t;
 
 typedef struct pid_list{
     ll_header_t header;
-    pid_t values[NUM_PROCESSES];
+    pid_t values[NUM_PROCS];
 } pid_list;
 
 typedef pid_list *pid_pq;

@@ -60,8 +60,8 @@ void memory_init(void)
 
 	/* allocate memory for pcb pointers   */
 	gp_pcbs = (PCB **)p_end;
-	p_end += NUM_TEST_PROCS * sizeof(PCB *);
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+	p_end += NUM_PROCS * sizeof(PCB *);
+	for ( i = 0; i < NUM_PROCS; i++ ) {
 		gp_pcbs[i] = (PCB *)p_end;
 		p_end += sizeof(PCB);
 	}
@@ -136,6 +136,7 @@ int k_release_memory_block_valid(void *p_mem_blk)
 }
 
 int k_release_memory_block(void *p_mem_blk) {
+	
 	//if memory block pointer is not valid return error
 	if(k_release_memory_block_valid(p_mem_blk) == RTX_OK){
 		PCB *p_blocked_pcb = k_dequeue_blocked_on_resource_process();

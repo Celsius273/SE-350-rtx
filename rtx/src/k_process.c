@@ -11,7 +11,7 @@
  *       These assumptions are not true in the required RTX Project!!!
  *       If you decide to use this piece of code, you need to understand the assumptions and
  *       the limitations.
- *@Modified: Pushpak Kumar 2016/01/27
+ *@Modified: Jobair Hassan, Kelvin Jiang 2016/02/04
  */
 
 #include <LPC17xx.h>
@@ -23,23 +23,25 @@
 // for NULL_PRIO
 #include "rtx.h"
 #include <assert.h>
+#include "priority_queue.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
 #endif /* DEBUG_0 */
 
+
 /* ----- Global Variables ----- */
-PCB *gp_pcbs[NUM_TEST_PROCS];   /* array of pcbs pointers */
+PCB **gp_pcbs;   /* array of pcbs pointers */
 PCB *gp_current_process = NULL; /* always point to the current RUN process */
 U32 g_switch_flag = 0;          /* whether to continue to run the process before the UART receive interrupt */
                                 /* 1 means to switch to another process, 0 means to continue the current process */
 																/* this value will be set by UART handler */
 
 /* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
-LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], PCB*, NUM_PROCS);
+LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of list of processes that are in READY state, one for each priority */
-LL_DECLARE(g_ready_queue[NUM_PRIORITIES], PCB*, NUM_PROCS);
+LL_DECLARE(g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCS];
@@ -54,34 +56,43 @@ void process_init()
 	int i;
 	U32 *sp;
 
-        /* fill out the initialization table */
+  /* fill out the initialization table */
 	set_test_procs();
 	int num_procs = 0;
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_proc_table[num_procs++] = g_test_procs[i];
-	}
+	
+	// This is for the null process
 	g_proc_table[num_procs++] = (PROC_INIT) {
 		.m_pid = NULL_PID,
 		.m_priority = NULL_PRIO,
 		.m_stack_size = 0x100,
 		.mpf_start_pc = &infinite_loop,
 	};
+	
+	// Setup initialization for all user processes
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
+		g_proc_table[num_procs++] = g_test_procs[i];
+	}
   
 	assert(NUM_PROCS == num_procs);
+	
 	/* initilize exception stack frame (i.e. initial context) for each process */
 	for ( i = 0; i < NUM_PROCS; i++ ) {
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
 		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
-		
+	
+		// Push processes onto ready queue
+		push_process(g_ready_queue, gp_pcbs[i]->m_pid, gp_pcbs[i]->m_priority);
+	
+		// Initializing stack pointer for each pcb
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR  
 		*(--sp)  = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
 		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
 			*(--sp) = 0x0;
 		}
-
+		
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 }
@@ -95,18 +106,17 @@ void process_init()
 
 PCB *scheduler(void)
 {
-	if (gp_current_process == NULL) {
-		gp_current_process = gp_pcbs[0];
-		return gp_pcbs[0];
-	}
+ 	  int pid = pop_first_process(g_ready_queue);
 
-	if ( gp_current_process == gp_pcbs[0] ) {
-		return gp_pcbs[1];
-	} else if ( gp_current_process == gp_pcbs[1] ) {
-		return gp_pcbs[0];
-	} else {
-		return NULL;
-	}
+		if(pid == -1) {
+			return gp_pcbs[NULL_PID];
+		}
+		
+		if(NULL == gp_current_process) {
+			gp_current_process = gp_pcbs[NULL_PID];
+		}
+		
+		return gp_pcbs[pid];
 }
 
 /*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
@@ -148,6 +158,7 @@ int process_switch(PCB *p_pcb_old)
 	}
 	return RTX_OK;
 }
+
 /**
  * @brief release_processor().
  * @return RTX_ERR on error and zero on success
@@ -155,69 +166,110 @@ int process_switch(PCB *p_pcb_old)
  */
 int k_release_processor(void)
 {
-    PCB *p_pcb_old = NULL;
-    p_pcb_old = gp_current_process;
-    gp_current_process = scheduler();
+	PCB *p_pcb_old = NULL;
 
-    // release_memory_for_process(p_pcb_old);
+	p_pcb_old = gp_current_process;
+	gp_current_process = scheduler();
+	
+	if ( gp_current_process == NULL && p_pcb_old == gp_pcbs[0]) {
+		gp_current_process = p_pcb_old; // revert back to the null process
+		return RTX_OK;
+	}
 
-    // Push p_pcb_old to end of priority queue
-
-
-
-//	PCB *p_pcb_old = NULL;
-//
-//	p_pcb_old = gp_current_process;
-//	gp_current_process = scheduler();
-//
-//	if ( gp_current_process == NULL  ) {
-//		gp_current_process = p_pcb_old; // revert back to the old process
-//		return RTX_ERR;
-//	}
-//        if ( p_pcb_old == NULL ) {
-//		p_pcb_old = gp_current_process;
-//	}
-//	process_switch(p_pcb_old);
-//	return RTX_OK;
-	return RTX_ERR;
+	push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+	process_switch(p_pcb_old);
+		
+	return RTX_OK;
+	
 }
 
 /*set the state of the p_pcb to BLOCKED_ON_RESOURCE and enqueue it in the blocked_on_resource queue*/
-void k_enqueue_blocked_on_resource_process(PCB* p_pcb)
+int k_enqueue_blocked_on_resource_process(PCB* p_pcb)
 {
-	/*queue_t can be implement using the generic linear list*/
-	LL_DECLARE(p_blocked_on_resource_queue, PCB*, 6);
+	// Error checking	
 	if(p_pcb == NULL){
-		return;
+		return RTX_ERR;
 	}
+	
+	// Change the state of the process to blocked on resource
 	p_pcb->m_state = BLOCKED_ON_RESOURCE;
-	p_blocked_on_resource_queue = &g_blocked_on_resource_queue[p_pcb->m_priority];
 
-	//Need a mechanism to check if a node already exists in the queue
-	/*
-	if(!(LL_SIZE(p_blocked_on_resource_queue)==0) && queue_contains_node(p_blocked_on_resource_queue, (node_t*)p_pcb)) {
-		return;
-	}
-	*/
-	LL_PUSH_BACK(p_blocked_on_resource_queue, p_pcb);
+	// Remove from ready queue, and put it into blocked queue, so we call move_process (which deques from
+	// ready queue, then pushes onto blocked queue
+	move_process(g_ready_queue, g_blocked_on_resource_queue, p_pcb->m_pid);
+		
+	return RTX_OK;
 }
 
 /*dequeue the next available process in blocked_on_resource queue*/
 PCB* k_dequeue_blocked_on_resource_process(void)
 {
-	PCB *p_pcb = NULL;
-	for(int i = 0; i < NUM_PRIORITIES; i++) {
-		if(!(LL_SIZE(g_blocked_on_resource_queue[i]) == 0)){
-			p_pcb = (PCB *)LL_POP_FRONT(g_blocked_on_resource_queue[i]);
-			break;
-		}
+	int pid = pop_first_process(g_blocked_on_resource_queue);
+	
+	if(pid == -1) {
+		return NULL;
 	}
-	return p_pcb;
+	
+	return gp_pcbs[pid];
 }
 
-void k_enqueue_ready_process(PCB *p_pcb)
+int k_enqueue_ready_process(PCB *p_pcb)
 {
-	/* enqueue the PCB in the ready queue corresponding to its priority */
-    LL_PUSH_BACK(g_ready_queue[p_pcb->m_priority], p_pcb);
+	if(NULL == p_pcb) {
+		return RTX_ERR; 
+	}
+	
+	push_process(g_ready_queue, p_pcb->m_pid, p_pcb->m_priority);
+	
+	return RTX_OK;
+}
 
+//TODO: Do we need this?
+
+// PCB* k_dequeue_ready_process(void)
+// {	
+// 	return gp_pcbs[pop_first_process(g_ready_queue)];
+// 	
+// }
+
+
+	
+
+int set_process_priority(int process_id, int priority) {
+	
+	// Check for invalid values
+	if(process_id < 1 || process_id >= NUM_PROCS || priority < 0 || priority >= NULL_PRIO) {
+		return RTX_ERR;
+	}
+	
+
+	PCB *p_pcb = NULL;
+	p_pcb = gp_pcbs[process_id];
+	
+	// If priority is the same already, then just return
+	if(p_pcb->m_priority == priority) {
+		return RTX_OK;
+	}
+	
+	change_priority(g_ready_queue, process_id, p_pcb->m_priority, priority);
+	change_priority(g_blocked_on_resource_queue, process_id, p_pcb->m_priority, priority);
+	
+	p_pcb->m_priority = priority;
+	
+	k_release_processor();
+	
+	return RTX_OK;
+}
+
+int get_process_priority(int process_id) {
+	
+	// Check for invalid pid values
+	if(process_id < NULL_PID || process_id >= NUM_PROCS) {
+		return RTX_ERR;
+	}
+	
+	// Get the pcb from the pid
+	PCB *p_pcb = gp_pcbs[process_id];
+	
+	return p_pcb->m_priority;
 }

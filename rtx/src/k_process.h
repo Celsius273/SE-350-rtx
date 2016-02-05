@@ -34,11 +34,15 @@ extern void __rte(void);               /* pop exception stack frame */
 extern void set_test_procs(void);      /* test process initial set up */
 
 /*set the state of the p_pcb to BLOCKED_ON_RESOURCE and enqueue it in the blocked_on_resource queue*/
-void k_enqueue_blocked_on_resource_process(PCB *p_pcb);
+int k_enqueue_blocked_on_resource_process(PCB *p_pcb);
 
 /*dequeue the next available process in blocked_on_resource queue*/
 PCB *k_dequeue_blocked_on_resource_process(void);
 
-void k_enqueue_ready_process(PCB *p_pcb);
+int k_enqueue_ready_process(PCB *p_pcb);
+PCB* k_dequeue_ready_process(void);
+
+int set_process_priority(int process_id, int priority);
+int get_process_priority(int process_id);
 
 #endif /* ! K_PROCESS_H_ */

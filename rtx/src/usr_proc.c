@@ -29,11 +29,11 @@ void test_assert(int expected, const char *msg, int lineno) {
 	const char *status = expected ? "OK" : "FAIL";
 	if (!expected) {
 		++tests_failed;
+		#ifdef DEBUG_0
+			printf("Assertion failed in %s:%d: %s\n", __FILE__, lineno, msg);
+		#endif
 	}
 	test_printf("test %d %s\n", ++tests_ran, status);
-#ifdef DEBUG_0
-	printf("Assertion failed in %s:%d: %s\n", __FILE__, lineno, msg);
-#endif
 }
 
 #define TEST_ASSERT(expected) \
@@ -74,6 +74,7 @@ static void test_transition(const char *from, const char *to)
 void infinite_loop(void)
 {
 	for (;;) {
+		printf("Yo recursion is so bad, EVEN YO MOMMA COULDN'T FLATTEN THE STACK");
 		release_processor();
 	}
 }

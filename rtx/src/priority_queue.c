@@ -88,7 +88,7 @@ void move_process(void* fq, void* tq, pid_t pid) {
 }
 
 // test print function
-void print_priority_queue(void* pq) {
+/*void print_priority_queue(void* pq) {
     pid_pq priority_queue = (pid_pq)pq;
     int x;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
@@ -120,4 +120,4 @@ int main(void) {
     printf("\n");
 
     print_priority_queue(toQueue);
-}
+}*/
