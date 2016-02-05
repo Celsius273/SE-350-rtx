@@ -131,6 +131,9 @@ void *test_mem_request(void) {
 #define PROC1_PID 1
 #define PROC2_PID 2
 #define PROC3_PID 3
+#define PROC4_PID 4
+#define PROC5_PID 5
+#define PROC6_PID 6
 
 /**
  * @brief: a process that tests the RTX API
@@ -281,4 +284,56 @@ void proc3(void)
 	TEST_EXPECT(0, test_release_processor());
 
 	TEST_ASSERT(0);
+}
+
+/**
+ * A test process that theoretically should not affect proc1-proc3.
+ * It does calculations and changes its own priority.
+ */
+void proc4(void)
+{
+	for (;;) {
+		{
+			// Cycle the priority
+			const int prio = get_process_priority(PROC4_PID);
+			TEST_EXPECT(RTX_OK, set_process_priority(PROC4_PID, (prio + 1) % NULL_PRIO));
+		}
+
+		{
+			// Check the buffer allows word access
+			int *buf = request_memory_block();
+			for (int i = 0; i < 32; ++i) {
+				buf[i] = -1;
+			}
+			for (int i = 0; i < 32; ++i) {
+				buf[((7 * i) % 32 + 32) % 32] = i;
+			}
+			TEST_EXPECT(-1, buf[4]);
+			TEST_EXPECT(23, buf[7]);
+			release_memory_block(buf);
+		}
+
+		{
+			double *buf = request_memory_block();
+			// These values should be stored correctly
+			buf[0] = 1.5;
+			buf[1] = 3. / 2;
+			TEST_EXPECT(1., buf[0] / buf[1]);
+			release_memory_block(buf);
+		}
+	}
+}
+
+/**
+ * TODO
+ */
+void proc5(void)
+{
+}
+
+/**
+ * TODO
+ */
+void proc6(void)
+{
 }
