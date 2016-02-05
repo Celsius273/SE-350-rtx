@@ -323,7 +323,7 @@ void proc4(void)
 			for (int i = 0; i < 32; ++i) {
 				buf[((7 * i) % 32 + 32) % 32] = i;
 			}
-			TEST_EXPECT(-1, buf[4]);
+			TEST_EXPECT(-1, buf[0]);
 			TEST_EXPECT(23, buf[7]);
 			release_memory_block(buf);
 		}
@@ -350,7 +350,7 @@ static volatile int sort_lo = 0, sort_hi = 0;
 static void sort_reset() {
 	int is_sorted = 1;
 	for (int i = 1; i < SORT_SIZE; ++i) {
-		is_sorted = is_sorted && sort_numbers[i-1] > sort_numbers[i];
+		is_sorted = is_sorted && sort_numbers[i-1] <= sort_numbers[i];
 	}
 	TEST_ASSERT(is_sorted);
 
