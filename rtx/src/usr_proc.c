@@ -76,8 +76,8 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 	}
 #endif
 	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
+	printf("Testing: %s => %s\n", test_state, to);
 	test_state = to;
-	printf("Testing: %s\n", test_state);
 }
 #define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
 
@@ -226,6 +226,7 @@ void proc2(void)
 	test_mem_release();
 
 	test_transition("Equal priority memory unblocking", "Equal priority memory unblocked");
+	// Should schedule proc3 since proc1 was preempted recently
 	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
