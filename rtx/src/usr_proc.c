@@ -76,7 +76,7 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 	}
 #endif
 	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
-	printf("Testing: %s => %s\n", test_state, to);
+	printf("Done: %s, starting %s\n", test_state, to);
 	test_state = to;
 }
 #define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
