@@ -42,7 +42,7 @@ PCB *k_dequeue_blocked_on_resource_process(void);
 int k_enqueue_ready_process(PCB *p_pcb);
 PCB* k_dequeue_ready_process(void);
 
-int set_process_priority(int process_id, int priority);
-int get_process_priority(int process_id);
+int k_set_process_priority(int process_id, int priority);
+int k_get_process_priority(int process_id);
 
 #endif /* ! K_PROCESS_H_ */
