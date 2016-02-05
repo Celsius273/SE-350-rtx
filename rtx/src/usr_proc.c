@@ -295,6 +295,7 @@ void proc3(void)
 /**
  * A test process that theoretically should not affect proc1-proc3.
  * It does calculations and changes its own priority.
+ * This test process calls each API function.
  */
 void proc4(void)
 {
