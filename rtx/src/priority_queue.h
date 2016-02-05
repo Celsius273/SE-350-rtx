@@ -13,27 +13,33 @@
 #endif
 
 #define NUM_PROCESSES 30
-#define NUM_PRIORITIES 4
+#define NUM_PRIORITIES 5
 
 typedef int pid_t;
 
-// #define 
+typedef struct pid_list{
+    ll_header_t header;
+    pid_t values[NUM_PROCESSES];
+} pid_list;
 
-// #define PQ_PUSH(pq, pid, priority) (LL_PUSH_BACK(pq[priority], pid))
+typedef pid_list *pid_pq;
 
-// #define PQ_POP(pq, priority) ()
+void push_process(pid_pq pq, pid_t pid, int priority);
 
-//void push(list queue[], int pid, int priority);
+pid_t pop_process(pid_pq pq, int priority);
+
+pid_t pop_first_process(pid_pq pq);
+
+pid_t peek_process_front(pid_pq pq, int priority); 
+
+pid_t peek_front(pid_pq pq);
+
+pid_t peek_process_back(pid_pq pq, int priority);
+
+bool change_priority(pid_pq pq, pid_t pid, int from, int to);
+
+void move_process(pid_pq from_queue, pid_pq to_queue, pid_t pid);
 
 /*
-push (pid, priority)
-
-pop (pid)
-
-reassign (pid, priority)
-
-peek() // peek
-
-0
-3 - null process
+void print_priority_queue(pid_pq priority_queue);
 */
