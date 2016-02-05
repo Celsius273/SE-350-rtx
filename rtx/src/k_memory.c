@@ -7,6 +7,7 @@
 
 #include "k_memory.h"
  #include "k_process.h"
+#include <assert.h>
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -161,7 +162,7 @@ int k_release_memory_block(void *p_mem_blk)
 
     //enqueue the popped PCB to the g_ready_queue;
     if(p_blocked_pcb != NULL){
-      if(p_blocked_pcb->m_priority > gp_current_process){
+      if(p_blocked_pcb->m_priority > gp_current_process->m_priority){
         p_unblocked_pcb = k_dequeue_blocked_on_resource_process();
       }
       else{
