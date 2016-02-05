@@ -175,12 +175,28 @@ int k_release_processor(void)
 		gp_current_process = p_pcb_old; // revert back to the null process
 		return RTX_OK;
 	}
+	/*
+		what if current state is running? and change to blocked?
 
-	push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+		but this changes a ton of things, breaks state assumptions
+		e.g. can't assume cur proc. is running in scheduler
+
+		before: ready queue, 
+		after:  blocked queue
+
+		svc indirect calls release processor, user space calls it
+
+	*/
+	if (p_pcb_old->m_state == BLOCKED_ON_RESOURCE) {
+		push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);	
+	}
+	else {
+		push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+	}
+	
 	process_switch(p_pcb_old);
 
 	return RTX_OK;
-
 }
 
 /*set the state of the p_pcb to BLOCKED_ON_RESOURCE and enqueue it in the blocked_on_resource queue*/

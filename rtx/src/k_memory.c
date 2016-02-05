@@ -110,8 +110,14 @@ void *k_request_memory_block(void)
 	U8 *p_mem_blk = NULL;
 
 	while(LL_SIZE(g_heap) == 0) {
-		k_enqueue_blocked_on_resource_process(gp_current_process);
+        // release proc, put cur proc. in ready queue
+        // not right because: call k
+        // never set current state to blocked
+        // if all we do is release processor
+        gp_current_process->m_state = BLOCKED_ON_RESOURCE;
 		k_release_processor();
+        assert(gp_current_process->m_state == RDY);
+        assert(LL_SIZE(g_heap) != 0);
 	}
 
 	p_mem_blk = (U8 *)LL_POP_FRONT(g_heap);
