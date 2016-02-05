@@ -21,7 +21,7 @@
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
-static int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_procs = 0;
+static volatile int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_proc = 0;
 static int tests_ran = 0, tests_failed = 0;
 const char *test_state = "Starting tests";
 
@@ -202,7 +202,11 @@ void proc1(void)
 	test_transition("Count blocks", "Test finished");
 
 	TEST_EXPECT(0, changed_bytes);
-	TEST_EXPECT(2, finished_procs);
+	TEST_ASSERT(finished_proc >= 2);
+	// Wait for proc{4,5,6} to "finish"
+	while (finished_proc < 5) {
+		test_release_processor();
+	}
 
 	test_printf("%d/%d tests OK\n", tests_ran - tests_failed, tests_ran);
 	test_printf("%d/%d tests FAIL\n", tests_failed, tests_ran);
@@ -250,7 +254,7 @@ void proc2(void)
 	TEST_EXPECT(0, set_process_priority(PROC3_PID, HIGH));
 	TEST_EXPECT(0, set_process_priority(PROC1_PID, LOWEST));
 	TEST_EXPECT(0, set_process_priority(PROC2_PID, LOWEST));
-	++finished_procs;
+	++finished_proc;
 	test_mem_release();
 
 	TEST_ASSERT(0);
@@ -280,7 +284,7 @@ void proc3(void)
 	TEST_EXPECT(0, set_process_priority(PROC3_PID, LOWEST));
 
 	test_transition("Resource contention (1 blocked)", "Resource contention resolved");
-	++finished_procs;
+	++finished_proc;
 	TEST_EXPECT(0, test_release_processor());
 
 	TEST_ASSERT(0);
@@ -292,7 +296,14 @@ void proc3(void)
  */
 void proc4(void)
 {
-	for (;;) {
+	for (int iteration = 0;; test_release_processor()) {
+		if (iteration < 3) {
+			++iteration;
+		} else {
+			// We want this process to run at least 3 iterations, before it's "finished".
+			++finished_proc;
+		}
+
 		{
 			// Cycle the priority
 			const int prio = get_process_priority(PROC4_PID);
@@ -323,21 +334,103 @@ void proc4(void)
 			TEST_EXPECT(1., buf[0] / buf[1]);
 			release_memory_block(buf);
 		}
+	}
+}
 
-		test_release_processor();
+// Test stack usage and shared memory works.
+// These processes will use a lot of stack memory and shared memory.
+// They implement quicksort.
+
+#define SORT_SIZE 10
+static volatile unsigned int sort_numbers[SORT_SIZE];
+static volatile int sort_lo = 0, sort_hi = 0;
+
+static void sort_reset() {
+	int is_sorted = 1;
+	for (int i = 1; i < SORT_SIZE; ++i) {
+		is_sorted = is_sorted && sort_numbers[i-1] > sort_numbers[i];
+	}
+	TEST_ASSERT(is_sorted);
+
+	static unsigned int random = 2429631604U;
+	for (int i = 0; i < SORT_SIZE; ++i) {
+		sort_numbers[i] = random % 3 + 2;
+		random = random * 1664525 + 1013904223;
 	}
 }
 
 /**
- * TODO
+ * Recursively quicksort.
+ * This uses a lot of stack.
  */
-void proc5(void)
-{
+static void sort_quicksort(int lo, int hi) {
+	if (hi - lo < 1) {
+		return;
+	}
+
+	sort_lo = lo;
+	sort_hi = hi;
+	// Wait for proc6 to finish partitioning
+	while (sort_lo < sort_hi) {
+		test_release_processor();
+	}
+
+	int pivot = sort_lo;
+	sort_quicksort(lo, pivot);
+	sort_quicksort(pivot + 1, hi);
 }
 
 /**
- * TODO
+ * This process is responsible for quicksort recursion.
+ * This process works with proc6 to test that the user stack is correctly allocated.
+ * These two processes use a bunch of stack space and communicate with each other.
+ */
+void proc5(void)
+{
+	for (int iteration = 0;; test_release_processor()) {
+		if (iteration < 3) {
+			++iteration;
+		} else {
+			// We want this process to run at least 3 iterations, before it's "finished".
+			++finished_proc;
+		}
+
+		sort_reset();
+		sort_quicksort(0, SORT_SIZE);
+	}
+}
+
+static int sort_partition(volatile unsigned int *arr, int len) {
+	int lo_vals[SORT_SIZE], hi_vals[SORT_SIZE];
+	int num_lo = 0, num_hi = 0;
+	int pivot = arr[0];
+	for (int i = 0; i < len; ++i) {
+		if (arr[i] < pivot) lo_vals[num_lo++] = arr[i];
+		else hi_vals[num_hi++] = arr[i];
+	}
+	for (int i = 0; i < num_lo; ++i) arr[i] = lo_vals[i];
+	for (int i = 0; i < num_hi; ++i) arr[num_lo + i] = hi_vals[i];
+	return num_lo - 1;
+}
+
+/**
+ * This process is responsible for quicksort partitioning.
+ * This process works with proc5 to test that the user stack is correctly allocated.
+ * These two processes use a bunch of stack space and communicate with each other.
  */
 void proc6(void)
 {
+
+	for (int iteration = 0;; test_release_processor()) {
+		if (iteration < 3) {
+			++iteration;
+		} else {
+			// We want this process to run at least 3 iterations, before it's "finished".
+			++finished_proc;
+		}
+
+		if (sort_lo < sort_hi) {
+			sort_lo = sort_hi = sort_partition(&sort_numbers[sort_lo], sort_hi - sort_lo);
+		}
+	}
 }
