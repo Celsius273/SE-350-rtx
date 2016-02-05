@@ -69,12 +69,12 @@ static void test_transition(const char *from, const char *to)
 #endif
 	TEST_EXPECT(from, test_state);
 	test_state = to;
+	printf("Testing: %s\n", test_state);
 }
 
 void infinite_loop(void)
 {
 	for (;;) {
-		printf("Yo recursion is so bad, EVEN YO MOMMA COULDN'T FLATTEN THE STACK");
 		release_processor();
 	}
 }
