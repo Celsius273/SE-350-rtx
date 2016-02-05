@@ -299,6 +299,8 @@ void proc4(void)
 			TEST_EXPECT(RTX_OK, set_process_priority(PROC4_PID, (prio + 1) % NULL_PRIO));
 		}
 
+		printf("Doing computations that shouldn't affect other processes\n");
+
 		{
 			// Check the buffer allows word access
 			int *buf = request_memory_block();
@@ -321,6 +323,8 @@ void proc4(void)
 			TEST_EXPECT(1., buf[0] / buf[1]);
 			release_memory_block(buf);
 		}
+
+		test_release_processor();
 	}
 }
 
