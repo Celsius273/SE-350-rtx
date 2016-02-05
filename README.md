@@ -39,7 +39,9 @@ FIFO-semantics for round robin scheduling are only noticeable when there are mor
 Of the other 6 processes, the last 3 behave like normal programs, and theoretically should not interfere with the first 3.
 These simply exercise the processor and expect the correct behaviour, performing some math and some recursion (quicksort) logic.
 They have some complex behaviour, so running them in parallel will test all sorts of interleavings of processes.
-For example, the quicksort implementation does the recursion in one process and the partitioning in another.
+For example, the quicksort implementation does the recursion in one process (proc5) and the partitioning in another (proc6).
+There's another process (proc4) that changes its own priority repeatedly.
+It guarantees it eventually sets itself to the lowest priority and releases the processor, but it detected a livelock condition.
 
 The combination of the two kinds of tests allows the first 3 processes to accurately report when and how a specific API is failing and the last 3 processes to detect more complex failures.
 
