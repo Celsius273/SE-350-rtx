@@ -23,7 +23,7 @@
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 static int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_procs = 0;
 static int tests_ran = 0, tests_failed = 0;
-const char *test_state = "Uninitialized";
+const char *test_state = "Starting tests";
 
 void test_assert(int expected, const char *msg, int lineno) {
 	const char *status = expected ? "OK" : "FAIL";
@@ -42,9 +42,9 @@ void test_assert(int expected, const char *msg, int lineno) {
 #define TEST_EXPECT(expected, actual) TEST_ASSERT((expected) == (actual));
 
 static int test_release_processor_impl(const char *procname) {
-	printf("Unscheduling process %s\n", procname);
+	printf("Unscheduling %s\n", procname);
 	int ret = release_processor();
-	printf("Rescheduling process %s\n", procname);
+	printf("Rescheduling %s\n", procname);
 	return ret;
 }
 #define test_release_processor() test_release_processor_impl(__FUNCTION__)
@@ -75,7 +75,7 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 		);
 	}
 #endif
-	test_assert(from == to, "OS scheduled wrong process", lineno);
+	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
 	test_state = to;
 	printf("Testing: %s\n", test_state);
 }
@@ -110,7 +110,7 @@ void test_mem_release(void) {
 	--test_mem_blocks;
 
 	printf("Releasing memory block 0x%08x\n", (unsigned long) test_mem_front);
-	TEST_EXPECT(0, release_memory_block(test_mem_front));
+	TEST_EXPECT(0, release_memory_block(cur));
 }
 
 void *test_mem_request(void) {
@@ -139,13 +139,12 @@ void proc1(void)
 {
 	test_printf("START\n");
 	test_printf("total %d tests\n", NUM_TESTS);
-	test_state = "Starting tests";
 
 	// int test_release_processor();
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
 	// the processor). The invoking process remains ready to execute and is put at the end of the
 	// ready queue of the same priority. Another process may possibly be selected for execution.
-	test_transition("Starting tests", "FIFO scheduling");
+	test_transition(test_state, "FIFO scheduling");
 	assert(proc2_work_remaining == 3);
 	for (int i = 2; i >= 0; --i) {
 		TEST_EXPECT(0, test_release_processor());
