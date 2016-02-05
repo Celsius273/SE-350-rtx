@@ -109,12 +109,13 @@ void test_mem_release(void) {
 	}
 	--test_mem_blocks;
 
-	printf("Releasing memory block 0x%08x\n", (unsigned long) test_mem_front);
+	printf("Releasing memory block 0x%08x\n", (unsigned long) cur);
 	TEST_EXPECT(0, release_memory_block(cur));
 }
 
 void *test_mem_request(void) {
 	mem_block_t *cur = (mem_block_t *)request_memory_block();
+	printf("Requested memory block 0x%08x\n", (unsigned long) cur);
 	assert(sizeof(*cur) == 128);
 
 	++test_mem_blocks;
@@ -124,7 +125,6 @@ void *test_mem_request(void) {
 
 	cur->next = test_mem_front;
 	test_mem_front = cur;
-	printf("Requested memory block 0x%08x\n", (unsigned long) test_mem_front);
 	return (void *) cur->data;
 }
 
