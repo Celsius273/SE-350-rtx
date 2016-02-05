@@ -48,7 +48,6 @@ static int test_release_processor_impl(const char *procname) {
 	return ret;
 }
 #define test_release_processor() test_release_processor_impl(__FUNCTION__)
-
 void set_test_procs() {
 	int i;
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
@@ -60,6 +59,9 @@ void set_test_procs() {
 	g_test_procs[0].mpf_start_pc = &proc1;
 	g_test_procs[1].mpf_start_pc = &proc2;
 	g_test_procs[2].mpf_start_pc = &proc3;
+	g_test_procs[3].mpf_start_pc = &proc4;
+	g_test_procs[4].mpf_start_pc = &proc5;
+	g_test_procs[5].mpf_start_pc = &proc6;
 }
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
