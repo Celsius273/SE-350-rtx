@@ -120,17 +120,25 @@ void *k_request_memory_block(void)
 
 int k_release_memory_block_valid(void *p_mem_blk)
 {
-  mem_t *p_mem = NULL;
-  if(p_mem_blk == NULL){
+  mem_t *const p_mem = (mem_t *)p_mem_blk;
+  if(p_mem == NULL){
     return RTX_ERR;
   }
 
-  if((U8* )p_mem < gp_heap_begin_addr || (U8 *)p_mem > gp_heap_end_addr) {
+	const unsigned long offset = (unsigned long)p_mem - (unsigned long)mem_blocks;
+  if(offset >= sizeof(mem_blocks)) {
     return RTX_ERR;
   }
-  if(((U8* )p_mem - gp_heap_begin_addr) % MEM_BLOCK_SIZE != 0){
+  if(offset % MEM_BLOCK_SIZE != 0){
     return RTX_ERR;
   }
+	// TODO make this faster using an array of booleans to store if it's used
+	mem_t *blk;
+	LL_FOREACH(blk, g_heap) {
+		if (blk == p_mem) {
+			return RTX_ERR:
+		}
+	}
   LL_PUSH_BACK(g_heap, p_mem);
   return RTX_OK;
 }
