@@ -63,6 +63,10 @@ void test_my_list(void) {
 	assert(LL_SIZE(my_list_copy) == 9);
 	LL_REMOVE(my_list_copy, 4);
 	assert(LL_SIZE(my_list_copy) == 8);
+	for (int i = 0; i < 10; ++i) {
+		LL_REMOVE(my_list_copy, i);
+	}
+	assert(LL_SIZE(my_list_copy) == 0);
 	for (int i = 0; i < 3; ++i) {
 		assert(LL_SIZE(my_list_arr[i]) == 10);
 	}	
