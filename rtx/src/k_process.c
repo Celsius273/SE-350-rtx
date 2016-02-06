@@ -285,7 +285,7 @@ int k_set_process_priority(int process_id, int priority) {
 
 	p_pcb->m_priority = priority;
 
-	k_release_processor();
+	k_check_preemption();
 
 	return RTX_OK;
 }
