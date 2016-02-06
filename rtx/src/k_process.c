@@ -107,9 +107,9 @@ void process_init()
 
 PCB *scheduler(void)
 {
-		int pid_of_front = peek_front(g_ready_queue);
+		int peek_priority = gp_pcbs[peek_front(g_ready_queue)]->m_priority;
 	
-	  if(pid_of_front == gp_current_process->m_pid) {
+	  if(peek_priority > gp_current_process->m_priority) {
 			return gp_current_process;
 		}
 		
