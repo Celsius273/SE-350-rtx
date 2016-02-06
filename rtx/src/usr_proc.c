@@ -248,7 +248,8 @@ void proc2(void)
 	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
-	test_mem_request();
+	// Request some memory, up to 3 times.
+	for (int i = 0; (test_mem_request(), i < 3) && test_state != "Preempt (inversion)"; ++i);
 
 	test_transition("Preempt (inversion)", "Set priority preempt (failed)");
 	TEST_EXPECT(0, set_process_priority(PROC1_PID, LOW));
