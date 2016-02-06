@@ -206,6 +206,7 @@ void proc1(void)
 	test_mem_release();
 
 	test_transition("Set user priority (lower)", "Release processor (max priority)");
+	// We're priority LOW, so we should still run.
 	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Release processor (max priority)", "Resource contention (1 blocked)");
