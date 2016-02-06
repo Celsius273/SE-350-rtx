@@ -24,6 +24,7 @@
 #include "rtx.h"
 #include <assert.h>
 #include "priority_queue.h"
+#include "k_memory.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -304,7 +305,7 @@ int k_get_process_priority(int process_id) {
 }
 
 void k_check_preemption(void) {
-	if (LL_SIZE(g_heap) > 0) {
+	if (k_memory_heap_free_blocks() > 0) {
 		copy_queue(g_blocked_on_resource_queue, g_ready_queue);
 	}
 

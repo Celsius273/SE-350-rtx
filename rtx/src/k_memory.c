@@ -162,3 +162,7 @@ int k_release_memory_block(void *p_mem_blk)
 	}
 	return RTX_OK;
 }
+
+int k_memory_heap_free_blocks(void) {
+	return LL_SIZE(g_heap);
+}

@@ -34,4 +34,6 @@ void *k_request_memory_block(void);
 
 int k_release_memory_block(void *);
 
+int k_memory_heap_free_blocks(void);
+
 #endif /* ! K_MEM_H_ */
