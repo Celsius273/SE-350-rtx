@@ -26,6 +26,9 @@ static int tests_ran = 0, tests_failed = 0;
 const char *test_state = "Starting tests";
 
 void test_assert(int expected, const char *msg, int lineno) {
+	if (finished) {
+		infinite_loop();
+	}
 	const char *status = expected ? "OK" : "FAIL";
 	if (!expected) {
 		++tests_failed;
