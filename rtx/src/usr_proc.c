@@ -233,6 +233,7 @@ void proc2(void)
 
 	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
 	test_mem_release();
+	test_mem_release();
 
 	test_transition("Equal priority memory unblocking", "Equal priority memory unblocked");
 	// Should schedule proc3 since proc1 was preempted recently
