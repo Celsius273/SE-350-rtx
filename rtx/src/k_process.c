@@ -48,6 +48,13 @@ LL_DECLARE(g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 PROC_INIT g_proc_table[NUM_PROCS];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
+static void infinite_loop(void)
+{
+	for (;;) {
+		release_processor();
+	}
+}
+
 /**
  * @biref: initialize all processes in the system
  * NOTE: We assume there are only two user processes in the system in this example.

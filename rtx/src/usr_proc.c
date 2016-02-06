@@ -25,6 +25,13 @@ static volatile int proc2_work_remaining = 3, proc3_work_remaining = 3, finished
 static int tests_ran = 0, tests_failed = 0;
 const char *test_state = "Starting tests";
 
+static void infinite_loop(void)
+{
+	for (;;) {
+		release_processor();
+	}
+}
+
 void test_assert(int expected, const char *msg, int lineno) {
 	if (finished) {
 		infinite_loop();
@@ -88,13 +95,6 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 	test_state = to;
 }
 #define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
-
-void infinite_loop(void)
-{
-	for (;;) {
-		release_processor();
-	}
-}
 
 typedef struct mem_block {
 	struct mem_block *volatile next;
