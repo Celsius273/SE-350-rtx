@@ -87,8 +87,30 @@ void move_process(void* fq, void* tq, pid_t pid) {
     }
 }
 
+void clear_queue(void* q) {
+    pid_pq queue = (pid_pq)q;
+    for (int i = 0; i < NUM_PRIORITIES; i++) {
+        LL_SIZE(queue[i]) = 0;
+    }
+}
+
+void copy_queue(void* fq, void* tq) {
+    pid_pq from_queue = (pid_pq)fq;
+    pid_pq to_queue = (pid_pq)tq;
+
+    // put everything in to_queue, and clear from_queue
+    pid_t elt;
+    for (int i = 0; i < NUM_PRIORITIES; i++) {
+        LL_FOREACH(elt, from_queue[i]) {
+            LL_PUSH_BACK(to_queue[i], elt);
+        }
+    }
+
+    clear_queue(fq);
+}
+/*
 // test print function
-/*void print_priority_queue(void* pq) {
+void print_priority_queue(void* pq) {
     pid_pq priority_queue = (pid_pq)pq;
     int x;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
@@ -107,17 +129,38 @@ int main(void) {
 
     push_process(ptest, 2, 0);
     push_process(ptest, 33, 0);
-    print_priority_queue(ptest);
-    printf("\n");
 
-    change_priority(ptest, 33, 0, 4);
+    printf("PTEST\n");
     print_priority_queue(ptest);
     printf("\n");
 
     push_process(toQueue, 121, 0);
     move_process(ptest, toQueue, 33);
+
+    printf("PTEST\n");
+    print_priority_queue(ptest);
+    printf("\n");
+    
+    printf("toq\n");
+    print_priority_queue(toQueue);
+    printf("\n");
+
+    push_process(ptest, 3, 1);
+    push_process(ptest, 4, 2);
+    push_process(ptest, 5, 3);
+    push_process(ptest, 53, 3);
+
+    printf("PTEST\n");
     print_priority_queue(ptest);
     printf("\n");
 
+    copy_queue(ptest, toQueue);
+
+    printf("PTEST\n");
+    print_priority_queue(ptest);
+    printf("\n");
+
+    printf("toq\n");
     print_priority_queue(toQueue);
-}*/
+}
+*/

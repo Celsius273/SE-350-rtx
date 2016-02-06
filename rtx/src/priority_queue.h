@@ -42,4 +42,8 @@ bool change_priority(void* pq, pid_t pid, int from, int to);
 
 void move_process(void* from_queue, void* to_queue, pid_t pid);
 
+void clear_queue(void* q);
+
+void copy_queue(void* fq, void* tq);
+
 void print_priority_queue(void* priority_queue);
