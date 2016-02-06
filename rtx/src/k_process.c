@@ -312,6 +312,13 @@ int k_get_process_priority(int process_id) {
 void k_check_preemption(void) {
 	if (k_memory_heap_free_blocks() > 0) {
 		copy_queue(g_blocked_on_resource_queue, g_ready_queue);
+		
+		for(int i = 0; i < NUM_PROCS; ++i) {
+			PCB* pcb = gp_pcbs[i];
+			if(pcb->m_state == BLOCKED_ON_RESOURCE) {
+				pcb->m_state = RDY;
+			}
+		}
 	}
 
 	PCB *p_ready_pcb = k_peek_ready_process_front();
