@@ -21,7 +21,7 @@
 
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
-static volatile int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_proc = 0;
+static volatile int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_proc = 0, finished = 0;
 static int tests_ran = 0, tests_failed = 0;
 const char *test_state = "Starting tests";
 
@@ -44,6 +44,11 @@ void test_assert(int expected, const char *msg, int lineno) {
 static int test_release_processor_impl(const char *procname) {
 	printf("Unscheduling %s\n", procname);
 	int ret = release_processor();
+	if (finished) {
+		for (;;) {
+			release_processor();
+		}
+	}
 	printf("Rescheduling %s\n", procname);
 	return ret;
 }
@@ -217,6 +222,7 @@ void proc1(void)
 	//   infinite_loop(), everything is okay.
 	TEST_EXPECT(tests_ran, NUM_TESTS);
 	test_printf("END\n");
+	finished = 1;
 	infinite_loop();
 }
 

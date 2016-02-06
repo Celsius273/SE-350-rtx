@@ -118,7 +118,6 @@ void *k_request_memory_block(void)
         // if all we do is release processor
         gp_current_process->m_state = BLOCKED_ON_RESOURCE;
 		k_release_processor();
-        assert(gp_current_process->m_state == RDY);
 	}
 
 	p_mem_blk = (U8 *)LL_POP_FRONT(g_heap);
