@@ -91,7 +91,7 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 void infinite_loop(void)
 {
 	for (;;) {
-		test_release_processor();
+		release_processor();
 	}
 }
 
@@ -270,7 +270,7 @@ void proc2(void)
 	++finished_proc;
 	test_mem_release();
 
-	TEST_ASSERT(0);
+	infinite_loop();
 }
 
 /**
@@ -304,7 +304,7 @@ void proc3(void)
 	++finished_proc;
 	TEST_EXPECT(0, test_release_processor());
 
-	TEST_ASSERT(0);
+	infinite_loop();
 }
 
 /**
