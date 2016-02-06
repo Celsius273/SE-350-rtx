@@ -7,6 +7,7 @@
 
 #include "k_memory.h"
  #include "k_process.h"
+#include "priority_queue.h"
 #include <assert.h>
 
 #ifdef DEBUG_0
@@ -155,7 +156,8 @@ int k_release_memory_block(void *p_mem_blk)
     mem_t *p_mem = (mem_t *)p_mem_blk;
     LL_PUSH_BACK(g_heap, p_mem);
 
-    copy_queue(g_blocked_on_resource_queue, g_ready_queue);
+		extern struct {} g_blocked_on_resource_queue, g_ready_queue;
+    copy_queue(&g_blocked_on_resource_queue, &g_ready_queue);
 
     PCB *p_blocked_pcb = k_peek_ready_process_front();
     if(p_blocked_pcb->m_priority > gp_current_process->m_priority){

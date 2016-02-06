@@ -13,18 +13,14 @@
 #include "rtx.h"
 #include "k_process.h"
 
-#endif
-
-//#define NUM_PROCESSES 4
-
-typedef int pid_t;
-
 typedef struct pid_list{
     ll_header_t header;
     pid_t values[NUM_PROCS];
 } pid_list;
 
 typedef pid_list *pid_pq;
+
+//#define NUM_PROCESSES 4
 
 void push_process(void* pq, pid_t pid, int priority);
 
@@ -47,3 +43,5 @@ void clear_queue(void* q);
 void copy_queue(void* fq, void* tq);
 
 void print_priority_queue(void* priority_queue);
+
+#endif

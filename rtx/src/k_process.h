@@ -23,6 +23,8 @@
 extern PROC_INIT g_proc_table[NUM_PROCS];
 extern PCB *gp_current_process; /* always point to the current RUN process */
 
+typedef int pid_t;
+
 /* ----- Functions ----- */
 
 void process_init(void);               /* initialize all procs in the system */
