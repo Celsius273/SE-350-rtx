@@ -155,22 +155,12 @@ int k_release_memory_block(void *p_mem_blk)
     mem_t *p_mem = (mem_t *)p_mem_blk;
     LL_PUSH_BACK(g_heap, p_mem);
 
-    //get PCB of the next highest-priority blocked process
-    PCB *p_unblocked_pcb;
-		PCB *p_blocked_pcb = k_peek_blocked_on_resource_front();
+    copy_queue(g_blocked_on_resource_queue, g_ready_queue);
 
-    //enqueue the popped PCB to the g_ready_queue;
-    if(p_blocked_pcb != NULL){
-      if(p_blocked_pcb->m_priority > gp_current_process->m_priority){
-        p_unblocked_pcb = k_dequeue_blocked_on_resource_process();
-      }
-      else{
-        return RTX_OK;
-      }
-			p_blocked_pcb->m_state = RDY;  //update the process state to RDY
-			k_enqueue_ready_process(p_blocked_pcb);  //enqueue the process in ready queue
-      return k_release_processor(); //call release processor
-		}
+    PCB *p_blocked_pcb = k_peek_ready_process_front();
+    if(p_blocked_pcb->m_priority > gp_current_process->m_priority){
+      return k_release_processor();
+    }
 	}
 	else{
 		return RTX_ERR;

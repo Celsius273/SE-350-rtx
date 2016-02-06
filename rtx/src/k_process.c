@@ -181,19 +181,19 @@ int k_release_processor(void)
 		but this changes a ton of things, breaks state assumptions
 		e.g. can't assume cur proc. is running in scheduler
 
-		before: ready queue, 
+		before: ready queue,
 		after:  blocked queue
 
 		svc indirect calls release processor, user space calls it
 
 	*/
 	if (p_pcb_old->m_state == BLOCKED_ON_RESOURCE) {
-		push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);	
+		push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
 	}
 	else {
 		push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
 	}
-	
+
 	process_switch(p_pcb_old);
 
 	return RTX_OK;
@@ -228,9 +228,9 @@ PCB* k_dequeue_blocked_on_resource_process(void)
 	return gp_pcbs[pid];
 }
 
-PCB* k_peek_blocked_on_resource_front(void)
+PCB* k_peek_ready_process_front(void)
 {
-	int pid = peek_front(g_blocked_on_resource_queue);
+	int pid = peek_front(g_ready_queue);
 
 	if(pid == -1) {
 		return NULL;
