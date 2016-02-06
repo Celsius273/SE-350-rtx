@@ -113,7 +113,7 @@ PCB *scheduler(void)
 				peek_priority = gp_pcbs[peek_pid]->m_priority;
 		}
 	
-	  if(NULL != gp_current_process && peek_priority > gp_current_process->m_priority) {
+	  if(NULL != gp_current_process && peek_priority > gp_current_process->m_priority && gp_current_process->m_state != BLOCKED_ON_RESOURCE) {
 			return gp_current_process;
 		}
 		
