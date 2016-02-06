@@ -162,6 +162,7 @@ void proc1(void)
 		test_mem_request();
 	}
 
+	// We should have been unblocked
 	test_transition("Equal priority memory unblocked", "Get priority");
 	TEST_EXPECT(LOWEST, get_process_priority(PROC1_PID));
 	TEST_EXPECT(LOWEST, get_process_priority(PROC2_PID));
@@ -232,10 +233,11 @@ void proc2(void)
 	}
 
 	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
+	// Let's free enough memory
 	test_mem_release();
 	test_mem_release();
 
-	test_transition("Equal priority memory unblocking", "Equal priority memory unblocked");
+	test_transition("Equal priority memory unblocking", "Equal priority memory unblocking 2");
 	// Should schedule proc3 since proc1 was preempted recently
 	TEST_EXPECT(0, test_release_processor());
 
@@ -276,6 +278,10 @@ void proc3(void)
 	}
 
 	// Since proc1 was preempted, it's at the back of the ready queue
+	// Let's run it.
+	test_transition("Equal priority memory unblocking 2", "Equal priority memory unblocked");
+	test_release_processor();
+
 	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
 	test_release_processor();
 
