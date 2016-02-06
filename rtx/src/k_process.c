@@ -107,14 +107,20 @@ void process_init()
 
 PCB *scheduler(void)
 {
- 	  int pid = pop_first_process(g_ready_queue);
-
+		int pid_of_front = peek_front(g_ready_queue);
+	
+	  if(pid_of_front == gp_current_process->m_pid) {
+			return gp_current_process;
+		}
+		
+		int pid = pop_first_process(g_ready_queue);
+		
 		if(pid == -1) {
 			return gp_pcbs[NULL_PID];
 		}
 
 		if(NULL == gp_current_process) {
-			gp_current_process = gp_pcbs[NULL_PID];
+			pid = NULL_PID;
 		}
 
 		return gp_pcbs[pid];
@@ -172,8 +178,7 @@ int k_release_processor(void)
 	p_pcb_old = gp_current_process;
 	gp_current_process = scheduler();
 
-	if ( gp_current_process == NULL && p_pcb_old == gp_pcbs[0]) {
-		gp_current_process = p_pcb_old; // revert back to the null process
+	if (gp_current_process == p_pcb_old) {
 		return RTX_OK;
 	}
 	/*
