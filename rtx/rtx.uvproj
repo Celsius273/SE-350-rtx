@@ -451,6 +451,16 @@
               <FileType>1</FileType>
               <FilePath>.\src\k_process.c</FilePath>
             </File>
+            <File>
+              <FileName>list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>priority_queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\priority_queue.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -460,26 +470,6 @@
               <FileName>usr_proc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\usr_proc.c</FilePath>
-            </File>
-            <File>
-              <FileName>list.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\list.c</FilePath>
-            </File>
-            <File>
-              <FileName>list.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\src\list.h</FilePath>
-            </File>
-            <File>
-              <FileName>priority_queue.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\priority_queue.c</FilePath>
-            </File>
-            <File>
-              <FileName>priority_queue.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\src\priority_queue.h</FilePath>
             </File>
           </Files>
         </Group>

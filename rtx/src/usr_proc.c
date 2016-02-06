@@ -306,11 +306,12 @@ void proc3(void)
 	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");
 	test_mem_request();
 
-	test_transition("Resource contention (3 and 1 blocked)", "Resource contention (1 blocked)");
+	test_transition("Resource contention (3 and 1 blocked)", "Resource contention (1 blocked again)");
 	test_mem_release();
+
+	test_transition("Resource contention (1 blocked again)", "Resource contention resolved");
 	TEST_EXPECT(0, test_set_process_priority(PROC3_PID, LOWEST));
 
-	test_transition("Resource contention (1 blocked)", "Resource contention resolved");
 	++finished_proc;
 	TEST_EXPECT(0, test_release_processor());
 
