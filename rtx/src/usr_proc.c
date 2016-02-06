@@ -230,7 +230,7 @@ void proc1(void)
 	test_printf("%d/%d tests FAIL\n", tests_failed, tests_ran);
 	// This invalidates tests_ran, but since all processes have reached
 	//   infinite_loop(), everything is okay.
-	TEST_EXPECT(tests_ran, NUM_TESTS);
+	assert(NUM_TESTS == tests_ran);
 	test_printf("END\n");
 	finished = 1;
 	infinite_loop();
