@@ -104,7 +104,7 @@ char test_mem_blocks = 0;
 // Count this as a single test
 int changed_bytes = 0;
 
-void test_mem_release(void) {
+static void test_mem_release(void) {
 	assert(test_mem_front != NULL);
 	mem_block_t *cur = test_mem_front;
 	test_mem_front = cur->next;
@@ -120,7 +120,7 @@ void test_mem_release(void) {
 	TEST_EXPECT(0, release_memory_block(cur));
 }
 
-void *test_mem_request(void) {
+static void *test_mem_request(void) {
 	mem_block_t *cur = (mem_block_t *)request_memory_block();
 	printf("Requested memory block 0x%08x\n", (unsigned long) cur);
 	assert(sizeof(*cur) == 128);
@@ -133,6 +133,17 @@ void *test_mem_request(void) {
 	cur->next = test_mem_front;
 	test_mem_front = cur;
 	return (void *) cur->data;
+}
+
+static int test_set_process_priority(int proc, int prio) {
+	printf("Setting process %d priority to %d\n", proc, prio);
+	return set_process_priority(proc, prio);
+}
+
+static int test_get_process_priority(int pid) {
+	const int prio = get_process_priority(pid);
+	printf("Process %d has priority %d\n", prio);
+	return prio;
 }
 
 #define PROC1_PID 1
@@ -169,29 +180,29 @@ void proc1(void)
 
 	// We should have been unblocked
 	test_transition("Equal priority memory unblocked", "Get priority");
-	TEST_EXPECT(LOWEST, get_process_priority(PROC1_PID));
-	TEST_EXPECT(LOWEST, get_process_priority(PROC2_PID));
-	TEST_EXPECT(RTX_ERR, get_process_priority(-1));
-	TEST_EXPECT(RTX_ERR, get_process_priority(NUM_TEST_PROCS + 1));
-	TEST_EXPECT(4, get_process_priority(NULL_PID));
+	TEST_EXPECT(LOWEST, test_get_process_priority(PROC1_PID));
+	TEST_EXPECT(LOWEST, test_get_process_priority(PROC2_PID));
+	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
+	TEST_EXPECT(RTX_ERR, test_get_process_priority(NUM_TEST_PROCS + 1));
+	TEST_EXPECT(4, test_get_process_priority(NULL_PID));
 
 	test_transition("Get priority", "Set null priority");
-	TEST_EXPECT(RTX_ERR, set_process_priority(NULL_PID, -1));
-	TEST_EXPECT(RTX_ERR, set_process_priority(NULL_PID, 0));
-	TEST_EXPECT(RTX_ERR, set_process_priority(NULL_PID, 3));
-	TEST_EXPECT(0, set_process_priority(NULL_PID, 4));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(NULL_PID, -1));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(NULL_PID, 0));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(NULL_PID, 3));
+	TEST_EXPECT(0, test_set_process_priority(NULL_PID, 4));
 
 	test_transition("Set null priority", "Set user priority (no-op)");
-	TEST_EXPECT(RTX_ERR, set_process_priority(PROC1_PID, -1));
-	TEST_EXPECT(RTX_ERR, set_process_priority(PROC1_PID, 4));
-	TEST_EXPECT(0, set_process_priority(PROC1_PID, get_process_priority(PROC1_PID)));
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, get_process_priority(PROC2_PID)));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PROC1_PID, -1));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PROC1_PID, 4));
+	TEST_EXPECT(0, test_set_process_priority(PROC1_PID, test_get_process_priority(PROC1_PID)));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, test_get_process_priority(PROC2_PID)));
 
 	test_transition("Set user priority (no-op)", "Set user priority (higher)");
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, MEDIUM));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, MEDIUM));
 
 	test_transition("Set user priority (inversion 2)", "Preempt (inversion)");
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, HIGH));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, HIGH));
 	test_mem_release();
 
 	test_transition("Set user priority (lower)", "Release processor (max priority)");
@@ -253,20 +264,20 @@ void proc2(void)
 	}
 
 	test_transition("Preempt (inversion)", "Set priority preempt (failed)");
-	TEST_EXPECT(0, set_process_priority(PROC1_PID, LOW));
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, MEDIUM));
+	TEST_EXPECT(0, test_set_process_priority(PROC1_PID, LOW));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, MEDIUM));
 
 	test_transition("Set priority preempt (failed)", "Set user priority (lower, tied)");
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, LOW));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, LOW));
 
 	test_transition("Set user priority (lower, tied)", "Set user priority (lower)");
 	// Move ourselves after proc3 in the ready queue
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, LOWEST));
 
 	test_transition("Resource contention (1 and 3 blocked)", "Resource contention (3 and 1 blocked)");
-	TEST_EXPECT(0, set_process_priority(PROC3_PID, HIGH));
-	TEST_EXPECT(0, set_process_priority(PROC1_PID, LOWEST));
-	TEST_EXPECT(0, set_process_priority(PROC2_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PROC3_PID, HIGH));
+	TEST_EXPECT(0, test_set_process_priority(PROC1_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, LOWEST));
 	++finished_proc;
 	test_mem_release();
 
@@ -298,7 +309,7 @@ void proc3(void)
 
 	test_transition("Resource contention (3 and 1 blocked)", "Resource contention (1 blocked)");
 	test_mem_release();
-	TEST_EXPECT(0, set_process_priority(PROC3_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PROC3_PID, LOWEST));
 
 	test_transition("Resource contention (1 blocked)", "Resource contention resolved");
 	++finished_proc;
@@ -324,8 +335,8 @@ void proc4(void)
 
 		{
 			// Cycle the priority
-			const int prio = get_process_priority(PROC4_PID);
-			TEST_EXPECT(RTX_OK, set_process_priority(PROC4_PID, (prio + 1) % NULL_PRIO));
+			const int prio = test_get_process_priority(PROC4_PID);
+			TEST_EXPECT(RTX_OK, test_set_process_priority(PROC4_PID, (prio + 1) % NULL_PRIO));
 		}
 
 		printf("Doing computations that shouldn't affect other processes\n");
