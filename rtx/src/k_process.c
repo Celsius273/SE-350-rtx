@@ -302,3 +302,15 @@ int k_get_process_priority(int process_id) {
 
 	return p_pcb->m_priority;
 }
+
+void k_check_preemption(void) {
+	if (LL_SIZE(g_heap) > 0) {
+		copy_queue(g_blocked_on_resource_queue, g_ready_queue);
+	}
+
+	PCB *p_ready_pcb = k_peek_ready_process_front();
+
+	if(gp_current_process->m_priority > p_ready_pcb->m_priority){
+    	k_release_processor();
+    }
+}

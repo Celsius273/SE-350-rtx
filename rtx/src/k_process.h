@@ -48,4 +48,6 @@ PCB* k_peek_ready_process_front(void);
 int k_set_process_priority(int process_id, int priority);
 int k_get_process_priority(int process_id);
 
+void k_check_preemption(void);
+
 #endif /* ! K_PROCESS_H_ */
