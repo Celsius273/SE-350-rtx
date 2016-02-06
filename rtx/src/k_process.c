@@ -107,9 +107,13 @@ void process_init()
 
 PCB *scheduler(void)
 {
-		int peek_priority = gp_pcbs[peek_front(g_ready_queue)]->m_priority;
+		int peek_priority = NUM_PRIORITIES;
+		int peek_pid = peek_front(g_ready_queue);
+		if (peek_pid != -1) {
+				peek_priority = gp_pcbs[peek_pid]->m_priority;
+		}
 	
-	  if(peek_priority > gp_current_process->m_priority) {
+	  if(NULL != gp_current_process && peek_priority > gp_current_process->m_priority) {
 			return gp_current_process;
 		}
 		
@@ -117,10 +121,6 @@ PCB *scheduler(void)
 		
 		if(pid == -1) {
 			return gp_pcbs[NULL_PID];
-		}
-
-		if(NULL == gp_current_process) {
-			pid = NULL_PID;
 		}
 
 		return gp_pcbs[pid];
