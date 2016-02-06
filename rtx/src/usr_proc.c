@@ -162,7 +162,7 @@ void proc1(void)
 		test_mem_request();
 	}
 
-	test_transition("Equal priority memory unblocked 2", "Get priority");
+	test_transition("Equal priority memory unblocked", "Get priority");
 	TEST_EXPECT(LOWEST, get_process_priority(PROC1_PID));
 	TEST_EXPECT(LOWEST, get_process_priority(PROC2_PID));
 	TEST_EXPECT(RTX_ERR, get_process_priority(-1));
@@ -276,9 +276,6 @@ void proc3(void)
 	}
 
 	// Since proc1 was preempted, it's at the back of the ready queue
-	test_transition("Equal priority memory unblocked", "Equal priority memory unblocked 2");
-	test_release_processor();
-
 	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
 	test_release_processor();
 
