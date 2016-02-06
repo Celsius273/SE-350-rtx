@@ -45,9 +45,7 @@ static int test_release_processor_impl(const char *procname) {
 	printf("Unscheduling %s\n", procname);
 	int ret = release_processor();
 	if (finished) {
-		for (;;) {
-			release_processor();
-		}
+		infinite_loop();
 	}
 	printf("Rescheduling %s\n", procname);
 	return ret;
