@@ -135,14 +135,14 @@ static void *test_mem_request(void) {
 	return (void *) cur->data;
 }
 
-static int test_set_process_priority(int proc, int prio) {
-	printf("Setting process %d priority to %d\n", proc, prio);
-	return set_process_priority(proc, prio);
+static int test_set_process_priority(int pid, int prio) {
+	printf("Setting process %d priority to %d\n", pid, prio);
+	return set_process_priority(pid, prio);
 }
 
 static int test_get_process_priority(int pid) {
 	const int prio = get_process_priority(pid);
-	printf("Process %d has priority %d\n", prio);
+	printf("Process %d has priority %d\n", pid, prio);
 	return prio;
 }
 
