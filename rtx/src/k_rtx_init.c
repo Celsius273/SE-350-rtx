@@ -20,7 +20,7 @@ void k_rtx_init(void)
 	process_init();
 	__enable_irq();
 	
-	uart1_put_string("RTX is starting\n\r");
+	uart0_put_string("RTX is starting\n\r");
 	/* start the first process */
 	k_release_processor();
 }
