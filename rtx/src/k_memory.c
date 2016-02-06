@@ -19,8 +19,8 @@ U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
                /* The first stack starts at the RAM high address */
 	       /* stack grows down. Fully decremental stack */
 
-mem_t mem_blocks[30];
-LL_DECLARE(g_heap, mem_t*, 30);
+mem_t mem_blocks[NUM_MEM_BLOCKS];
+LL_DECLARE(g_heap, mem_t*, NUM_MEM_BLOCKS);
 U8 *gp_heap_begin_addr;
 U8 *gp_heap_end_addr;
 
