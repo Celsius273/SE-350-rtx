@@ -67,3 +67,38 @@ To allow the same functions to work on queues with different capacity and type, 
 At each call site, the macros perform type and capacity checks.
 Unfortunately, in C, there are no template functions, so macros are the only way to perform these checks.
 This makes using the lists less error-prone.
+
+## Priority Queue
+To store process IDs for ready and blocked processes by priority, as well as determine which should be the next process that should be run/unblocked and run, an array of the generic Linear Lists above indexed by priority is used.
+
+The priority queue can support up to 5 priorities as that is the number of priorities to be supported by processes, and a set capacity for each linked list per priority.
+
+2 global priority queues for pids are used: a ready queue and a blocked on resource queue
+
+The priority queue supports these operations:
+- push_process: pushes a process ID into a list at the index of the priority
+
+- pop_process: pops a pid at a given priority
+
+- pop_first_process: traverses the queues in decreasing order of priority and pops the first pid it finds
+
+- peek_process_front: returns the first pid at the beginning of the queue for the given priority
+
+- peek_front: traverses the queues in decreasing order of priority and returns the first pid it finds
+
+- peek_process_back: returns the first pid at the end of the queue for the given priority
+
+- change_priority: traverses the queue to find a given pid, then removes the pid from the queue indexed by the pid's current priority and enqueues it to the queue for the new priority the pid is to be assigned to
+
+- move_process: finds the pid in one priority queue (from_queue), removes it from that queue, then adds the pid into the other queue (to_queue) keeping its priority the same
+
+- clear_queue: removes all pids from a priority queue
+
+- copy_queue: pushes all of the pids of one queue (from_queue) into the other (to_queue), then clears the first queue
+
+## Check Preemption
+When a memory block is to be released or a process is to be set to a new priority, preemption must be checked before the operation ends.
+
+Preemption checking starts first by checking if the heap has free memory, and if it does, the pids of all blocked blocked on resource processes are moved out of the blocked on resource queue and into the ready queue and the PCBs for each of those processes have their state changed from BLOCKED_ON_RESOURCE to RDY.
+
+The priority of the process with the highest priority in the ready queue is then checked, and if its priority is higher than that of the current process, then the processor is released.
