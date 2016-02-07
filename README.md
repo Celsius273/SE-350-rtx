@@ -3,6 +3,12 @@ SE350
 
 University of Waterloo SE350 Operating Systems RTX Project Starter Files and Documentation
 
+##### Group Number: 004
+
+##### Group Members: Ted Ying, Jobair Hassan, Kelvin Jiang, Pushpak Kumar
+
+The directory contains all of the source code(int rtx subfolder) , uVision project files, and project documentation
+
 ## User test processes
 There are 6 user test processes. The first 3 (the minimum required to test all features) behave like unit tests, testing each case of each function against the specification.
 
