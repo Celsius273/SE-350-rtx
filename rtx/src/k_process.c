@@ -11,7 +11,7 @@
  *       These assumptions are not true in the required RTX Project!!!
  *       If you decide to use this piece of code, you need to understand the assumptions and
  *       the limitations.
- *@Modified: Jobair Hassan, Kelvin Jiang 2016/02/04
+ *@Modified: Pushpak Kumar 2016/02/27
  */
 
 #include <LPC17xx.h>
@@ -30,7 +30,6 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
-
 /* ----- Global Variables ----- */
 PCB **gp_pcbs;   /* array of pcbs pointers */
 PCB *gp_current_process = NULL; /* always point to the current RUN process */
@@ -43,6 +42,10 @@ LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of list of processes that are in READY state, one for each priority */
 LL_DECLARE(g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
+
+/* array of list of processes that are in BLOCKED_ON_RECEIVE state, one for each priority */
+LL_DECLARE(g_blocked_on_receive_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
+
 
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCS];
@@ -334,3 +337,105 @@ void k_check_preemption(void) {
     	k_release_processor();
     }
 }
+
+/*Inter Process Communication Methods*/
+int k_send_message(int receiver_pid, void *p_msg_env)
+{
+	if (p_msg_env == NULL) {
+		return RTX_ERR;
+	}
+    
+  if (receiver_pid < 0 || receiver_pid >= NUM_PROCS) {
+		return RTX_ERR;
+	}
+  
+	if (k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env) == 1) {
+		//if the receiving process is of higher priority, preemption might happen
+		if (gp_pcbs[receiver_pid]->m_priority <= gp_current_process->m_priority) {
+			return k_release_processor();
+		}
+	}
+	return RTX_ERR;
+}
+
+int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
+{
+    MSG_BUF *p_msg_envelope = NULL;
+    PCB *p_receiver_pcb = NULL;
+    
+    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg - MSG_HEADER_OFFSET);
+    p_msg_envelope->m_send_pid = sender_pid;
+    p_msg_envelope->m_recv_pid = receiver_pid;
+    
+    p_receiver_pcb = gp_pcbs[receiver_pid];
+    
+    enqueue_message(p_msg_envelope, &(p_receiver_pcb->m_msg_queue));		//Kelvin: Add enqueue_message(MSG_BUF*, void* pq) to your priority queue API
+		
+    if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
+        //if the process was previously in the blocked queue, unblock it and put it in the ready queue
+        remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);		//Kelvin: implement remove_from_queue
+        p_receiver_pcb->m_state = RDY;
+        k_enqueue_ready_process(p_receiver_pcb);
+        
+        return 1;	//signals that receiver is unblocked and put onto the ready
+    } else {
+        return 0;
+    }
+}
+
+void *k_receive_message(int *p_sender_pid)
+{
+	MSG_BUF *p_msg = NULL;
+    
+	while (is_queue_empty(&(gp_current_process->m_msg_queue))) {
+			k_enqueue_blocked_on_receive_process(gp_current_process);
+			k_release_processor();
+	}
+	
+	p_msg = (MSG_BUF *)dequeue_message(&(gp_current_process->m_msg_queue));		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
+	
+	if (p_msg == NULL) {
+			return NULL;
+	}
+	
+	if (p_sender_pid != NULL) {
+		//Note the sender_id is an output parameter and is not meant to filter which message to receive.
+		*p_sender_pid = p_msg->m_send_pid;
+	}
+	
+	return (void *)((U8 *)p_msg + MSG_HEADER_OFFSET);
+}
+
+void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
+{
+    void *p_blocked_on_receive_queue = NULL;
+    
+    if (p_pcb == NULL) {
+        return;
+    }
+    
+    p_pcb->m_state = BLOCKED_ON_RECEIVE;
+		
+    p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
+    
+    if (!is_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
+        //don't re-add the process if it has already been added to the queue
+        return;
+    }
+    
+    /* put process in the blocked-on-receive-queue */
+    push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
+}
+
+void *k_non_blocking_receive_message(int pid)
+{
+    if (!is_queue_empty(&(gp_pcbs[pid]->m_msg_queue))) {
+        MSG_BUF *p_msg = (MSG_BUF *)dequeue_message(&(gp_pcbs[pid]->m_msg_queue));
+        return (void *)((U8 *)p_msg + MSG_HEADER_OFFSET);
+    } else {
+        return NULL;
+    }
+}
+
+
+
