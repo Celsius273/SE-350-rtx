@@ -28,7 +28,6 @@ const char *test_state = "Starting tests";
 static void infinite_loop(void)
 {
 	for (;;) {
-		release_processor();
 	}
 }
 

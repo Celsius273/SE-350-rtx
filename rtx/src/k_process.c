@@ -51,7 +51,6 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 static void infinite_loop(void)
 {
 	for (;;) {
-		release_processor();
 	}
 }
 
