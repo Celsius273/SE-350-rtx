@@ -108,6 +108,13 @@ void copy_queue(void* fq, void* tq) {
 
     clear_queue(fq);
 }
+
+bool is_queue_empty(void* q) {return true;}
+int remove_from_queue(void* pq, int pid_t) {return 1;}	//unlike pop this could be anywhere in the queue
+bool queue_contains_node(void* pq, int pcb_id) {return false;}
+MSG_BUF *dequeue_message(void* pq) {return NULL;} 
+void enqueue_message(MSG_BUF* p_msg, void* pq){};
+
 /*
 // test print function
 void print_priority_queue(void* pq) {

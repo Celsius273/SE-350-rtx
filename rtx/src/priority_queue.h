@@ -44,4 +44,17 @@ void copy_queue(void* fq, void* tq);
 
 void print_priority_queue(void* priority_queue);
 
+/* Your implementation of queue is highly tailored to just processes,
+	 we need to be able to use it for inter process communication as well.
+	 Can you please have a look at it and see how will you modify it. Thanks -Pushpak.
+	 
+	 Note, the following functions give you the exact list, you don't need to access particular list based on the priority 
+*/
+
+bool is_queue_empty(void* q);
+int remove_from_queue(void* pq, int pid_t);	//unlike pop this could be anywhere in the queue
+bool queue_contains_node(void* pq, int pcb_id); 
+MSG_BUF *dequeue_message(void* pq); 
+void enqueue_message(MSG_BUF* p_msg, void* pq);
+
 #endif

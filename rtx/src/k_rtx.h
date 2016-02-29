@@ -4,6 +4,8 @@
  * @auther: Yiqing Huang
  * @date:   2014/01/17
  */
+ 
+#include "common.h"
 
 #ifndef K_RTX_H_
 #define K_RTX_H_
@@ -16,14 +18,13 @@
 #define NULL 0
 #define NUM_MEM_BLOCKS 30
 #define MEM_BLOCK_SIZE 128
-#define MSG_HEADER_OFFSET 16
 
 /*----- Types -----*/
 typedef unsigned char U8;
 typedef unsigned int U32;
 
 /* process states, note we only assume three states in this example */
-typedef enum {NEW = 0, RDY, RUN, BLOCKED_ON_RESOURCE} PROC_STATE_E;
+typedef enum {NEW = 0, RDY, RUN, BLOCKED_ON_RESOURCE, BLOCKED_ON_RECEIVE} PROC_STATE_E;
 
 /*
   PCB data structure definition.
@@ -37,6 +38,7 @@ typedef struct pcb
 	U32 m_pid;		/* process id */
 	PROC_STATE_E m_state;   /* state of the process */
 	int m_priority;         /* current priority */
+	void* m_msg_queue;	/*message queue*/
 } PCB;
 
 #endif // ! K_RTX_H_
