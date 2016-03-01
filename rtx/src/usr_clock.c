@@ -130,11 +130,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 			 * the clock running and causes display of the current wall clock time on the console
 			 * CRT. The display will be updated every second.
 			 */
-			if (
-					0 <= h && h < 24 &&
-					0 <= m && m < 60 &&
-					0 <= s && s < 60
-			   ) {
+			if (h < 24 && m < 60 && s < 60) {
 				clock_h = h;
 				clock_m = m;
 				clock_s = s;
