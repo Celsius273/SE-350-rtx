@@ -14,7 +14,6 @@
 #include "rtx.h"
 #include "k_process.h"
 #include "k_memory.h"
-#include "uart_polling.h"
 #include "usr_proc.h"
 #include "printf.h"
 
