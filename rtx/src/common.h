@@ -13,7 +13,9 @@
 
 #define TRUE 1
 #define FALSE 0
+#ifndef NULL
 #define NULL 0
+#endif
 #define RTX_ERR -1
 #define RTX_OK 0
 #define NUM_TEST_PROCS 6
