@@ -6,14 +6,18 @@
  * NOTE: Each process is in an infinite loop. Processes never terminate.
  */
 
+#include <assert.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdio.h>
 #include "rtx.h"
 #include "k_process.h"
+#include "k_memory.h"
 #include "uart_polling.h"
 #include "usr_proc.h"
 #include "printf.h"
-#include <assert.h>
 
-// TODO set these constants
 #define NUM_TESTS 186
 #define GROUP_ID "004"
 
@@ -146,12 +150,12 @@ static int test_get_process_priority(int pid) {
 	return prio;
 }
 
-#define PROC1_PID 1
-#define PROC2_PID 2
-#define PROC3_PID 3
-#define PROC4_PID 4
-#define PROC5_PID 5
-#define PROC6_PID 6
+#define PID_P1 1
+#define PID_P2 2
+#define PID_P3 3
+#define PID_P4 4
+#define PID_P5 5
+#define PID_P6 6
 
 /**
  * @brief: a process that tests the RTX API
@@ -180,8 +184,8 @@ void proc1(void)
 
 	// We should have been unblocked
 	test_transition("Equal priority memory unblocked", "Get priority");
-	TEST_EXPECT(LOWEST, test_get_process_priority(PROC1_PID));
-	TEST_EXPECT(LOWEST, test_get_process_priority(PROC2_PID));
+	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P1));
+	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P2));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(NUM_TEST_PROCS + 1));
 	TEST_EXPECT(4, test_get_process_priority(NULL_PID));
@@ -193,16 +197,16 @@ void proc1(void)
 	TEST_EXPECT(0, test_set_process_priority(NULL_PID, 4));
 
 	test_transition("Set null priority", "Set user priority (no-op)");
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PROC1_PID, -1));
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PROC1_PID, 4));
-	TEST_EXPECT(0, test_set_process_priority(PROC1_PID, test_get_process_priority(PROC1_PID)));
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, test_get_process_priority(PROC2_PID)));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_P1, -1));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_P1, 4));
+	TEST_EXPECT(0, test_set_process_priority(PID_P1, test_get_process_priority(PID_P1)));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, test_get_process_priority(PID_P2)));
 
 	test_transition("Set user priority (no-op)", "Set user priority (higher)");
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, MEDIUM));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
 
 	test_transition("Set user priority (inversion 2)", "Preempt (inversion)");
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, HIGH));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, HIGH));
 	test_mem_release();
 
 	test_transition("Set user priority (lower)", "Release processor (max priority)");
@@ -265,20 +269,20 @@ void proc2(void)
 	}
 
 	test_transition("Preempt (inversion)", "Set priority preempt (failed)");
-	TEST_EXPECT(0, test_set_process_priority(PROC1_PID, LOW));
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, MEDIUM));
+	TEST_EXPECT(0, test_set_process_priority(PID_P1, LOW));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
 
 	test_transition("Set priority preempt (failed)", "Set user priority (lower, tied)");
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, LOW));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOW));
 
 	test_transition("Set user priority (lower, tied)", "Set user priority (lower)");
 	// Move ourselves after proc3 in the ready queue
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
 
 	test_transition("Resource contention (1 and 3 blocked)", "Resource contention (3 and 1 blocked)");
-	TEST_EXPECT(0, test_set_process_priority(PROC3_PID, HIGH));
-	TEST_EXPECT(0, test_set_process_priority(PROC1_PID, LOWEST));
-	TEST_EXPECT(0, test_set_process_priority(PROC2_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PID_P3, HIGH));
+	TEST_EXPECT(0, test_set_process_priority(PID_P1, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
 	++finished_proc;
 	test_mem_release();
 
@@ -312,7 +316,7 @@ void proc3(void)
 	test_mem_release();
 
 	test_transition("Resource contention (1 blocked again)", "Resource contention resolved");
-	TEST_EXPECT(0, test_set_process_priority(PROC3_PID, LOWEST));
+	TEST_EXPECT(0, test_set_process_priority(PID_P3, LOWEST));
 
 	++finished_proc;
 	TEST_EXPECT(0, test_release_processor());
@@ -337,8 +341,8 @@ void proc4(void)
 
 		{
 			// Cycle the priority
-			const int prio = test_get_process_priority(PROC4_PID);
-			TEST_EXPECT(RTX_OK, test_set_process_priority(PROC4_PID, (prio + 1) % NULL_PRIO));
+			const int prio = test_get_process_priority(PID_P4);
+			TEST_EXPECT(RTX_OK, test_set_process_priority(PID_P4, (prio + 1) % NULL_PRIO));
 		}
 
 		printf("Doing computations that shouldn't affect other processes\n");
@@ -467,6 +471,126 @@ void proc6(void)
 		} else {
 			// We want this process to run at least 3 iterations, before it's "finished".
 			++finished_proc;
+		}
+	}
+}
+
+// Wall clock display
+
+#define MTEXT_MAXLEN (sizeof(mem_t) - offsetof(struct msgbuf, mtext) - 1)
+
+void kcd_register(const char *cmd_prefix)
+{
+	assert(strlen(cmd_prefix) <= MTEXT_MAXLEN);
+
+	struct msgbuf *p_msg_env = request_memory_block();
+	p_msg_env->mtype = KCD_REG;
+	strcpy(p_msg_env->mtext, cmd_prefix);
+	send_message(PID_KCD, p_msg_env);
+	p_msg_env = NULL;
+}
+
+int crt_printf(const char *fmt, ...) {
+	struct msgbuf *msg = request_memory_block();
+	int ret;
+	{
+		va_list va;
+		va_start(va, fmt);
+		ret = vsnprintf(msg->mtext, sizeof(msg->mtext), fmt, va);
+		va_end(va);
+	}
+	send_message(PID_CRT, msg);
+	return ret;
+}
+
+static volatile int clock_tick = 0;
+static volatile unsigned int clock_h, clock_m, clock_s;
+
+/**
+ * Print the time and schedule another tick.
+ * Optionally take a message with the expected clock tick.
+ */
+void clock_handle_tick(struct msgbuf *msg)
+{
+	if (msg) {
+		int clock_tick_ = clock_tick;
+		if (memcmp(msg->mtext, &clock_tick_, sizeof(clock_tick_))) {
+			return;
+		}
+		if ((clock_s = (clock_s + 1) % 60) == 0) {
+			if ((clock_m = (clock_m + 1) % 60) == 0) {
+				if ((clock_h = (clock_h + 1) % 60) == 0) {
+					// next day, do nothing
+				}
+			}
+		}
+	} else {
+		msg = request_memory_block();
+	}
+
+	crt_printf("Wall clock: %02u:%02u:%02u\n", clock_h, clock_m, clock_s);
+
+	{
+		int clock_tick_ = clock_tick;
+		memcpy(msg->mtext, &clock_tick_, sizeof(clock_tick_));
+	}
+	delayed_send(PID_CLOCK, msg, 1000);
+}
+
+void clock_handle_message(struct msgbuf *cmd)
+{
+	char c;
+	unsigned int h, m, s;
+	cmd->mtext[MTEXT_MAXLEN] = '\0';
+	int nread = sscanf(cmd->mtext, "%c %u:%u:%u", &c, &h, &m, &s);
+	if (nread != (c == 'S' ? 4 : 1)) {
+		c = '\0';
+	}
+	switch (c) {
+		case 'R':
+			/* The %WR command will reset the current wall clock time to 00:00:00, starts the clock
+			 * running and causes display of the current wall clock time on the console CRT. The
+			 * display will be updated every second.
+			 */
+			h = m = s = 0;
+		case 'S':
+			/* The %WS hh:mm:ss command sets the current wall clock time to hh:mm:ss, starts
+			 * the clock running and causes display of the current wall clock time on the console
+			 * CRT. The display will be updated every second.
+			 */
+			clock_h = h;
+			clock_m = m;
+			clock_s = s;
+			clock_handle_tick(NULL);
+			break;
+		case 'T':
+			/* The %WT command will cause the wall clock display to be terminated.
+			 */
+			++clock_tick;
+			break;
+		default:
+			printf("Invalid command: %s\n", cmd->mtext);
+			break;
+	}
+}
+
+/**
+ * Wall clock display process
+ */
+void proc_clock(void)
+{
+	kcd_register("%W");
+
+	for (;;) {
+		int sender_id = -1;
+		struct msgbuf *msg = receive_message(&sender_id);
+		switch (sender_id) {
+			case PID_KCD:
+				clock_handle_message(msg);
+				break;
+			case PID_CLOCK:
+				clock_handle_tick(msg);
+				break;
 		}
 	}
 }
