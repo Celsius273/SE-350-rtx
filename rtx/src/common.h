@@ -78,6 +78,9 @@ typedef struct msgbuf
 	char mtext[1];          /* body of the message */
 } MSG_BUF;
 
+#define MEM_BLOCK_SIZE 128
+#define MTEXT_MAXLEN (MEM_BLOCK_SIZE - offsetof(struct msgbuf, mtext) - 1)
+
 #define MSG_HEADER_OFFSET 29  //this needs to be updated once timing delay is added
 
 #ifdef DEBUG_0

@@ -14,7 +14,7 @@
 
 typedef struct mem_t{
 	// Guarantee 8-byte alignment, the largest common alignment
-	U32 m_val[128 / 4] __attribute__ ((aligned (8)));
+	U32 m_val[(MEM_BLOCK_SIZE + 3) / 4] __attribute__ ((aligned (8)));
 } mem_t;
 
 /* ----- Definitions ----- */

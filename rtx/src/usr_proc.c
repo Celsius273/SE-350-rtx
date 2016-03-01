@@ -7,6 +7,8 @@
  */
 
 #include <assert.h>
+#include <string.h>
+#include <stdio.h>
 #include "rtx.h"
 #include "k_process.h"
 #include "usr_proc.h"
@@ -217,7 +219,43 @@ void proc1(void)
 		++blocks;
 	}
 	TEST_ASSERT(blocks >= 30);
-	test_transition("Count blocks", "Test finished");
+
+	test_transition("Count blocks", "Send self message");
+	{
+		struct msgbuf msg;
+		msg.mtype = DEFAULT;
+		strcpy(msg.mtext, "Hi");
+		send_message(PID_P1, &msg);
+		send_message(PID_P1, &msg);
+		int from = -1;
+		struct msgbuf *m1 = receive_message(&from);
+		TEST_EXPECT(PID_P1, from);
+		TEST_ASSERT(!strcmp("Hi", m1->mtext));
+		struct msgbuf *m2 = receive_message(NULL);
+		TEST_ASSERT(!strcmp("Hi", m2->mtext));
+	}
+
+	test_transition("Send self message", "Send other message");
+	test_set_process_priority(PID_P2, HIGH);
+	{
+		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
+		msg->mtype = 42;
+		strcpy(msg->mtext, "42");
+		send_message(PID_P2, msg);
+	}
+
+	test_transition("Send delayed message", "Receive delayed message");
+	for (int i = 0; i < 3; ++i) {
+		int from = -1;
+		struct msgbuf *msg = receive_message(&from);
+		TEST_EXPECT(PID_P2, from);
+		TEST_EXPECT(10 + i, msg->mtype);
+		char buf[MTEXT_MAXLEN + 1];
+		snprintf(buf, MTEXT_MAXLEN, "%d", i);
+		TEST_ASSERT(!strncmp(buf, msg->mtext, MTEXT_MAXLEN));
+	}
+
+	test_transition("Receive delayed message", "Test finished");
 
 	TEST_EXPECT(0, changed_bytes);
 	TEST_ASSERT(finished_proc >= 2);
@@ -277,8 +315,28 @@ void proc2(void)
 	TEST_EXPECT(0, test_set_process_priority(PID_P3, HIGH));
 	TEST_EXPECT(0, test_set_process_priority(PID_P1, LOWEST));
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
-	++finished_proc;
 	test_mem_release();
+
+	test_transition("Send other message", "Receive other message");
+	TEST_EXPECT(HIGH, test_get_process_priority(PID_P2));
+	{
+		int from = -1;
+		struct msgbuf *msg = receive_message(&from);
+		TEST_EXPECT(PID_P1, from);
+		TEST_EXPECT(42, msg->mtype);
+		TEST_ASSERT(!strcmp("42", msg->mtext));
+	}
+
+	test_transition("Receive other message", "Send delayed message");
+	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
+	for (int i = 2; i >= 0; --i) {
+		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
+		msg->mtype = 10 + i;
+		sprintf(msg->mtext, "%d", i);
+		delayed_send(PID_P1, msg, i);
+	}
+
+	++finished_proc;
 
 	infinite_loop();
 }

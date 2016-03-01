@@ -21,8 +21,6 @@ typedef struct mem_t{
 // Wall clock display
 // Test: g++ -o usr_clock usr_clock.c -DUSR_CLOCK_TEST -Wall -g3 && ./usr_clock
 
-#define MTEXT_MAXLEN (sizeof(mem_t) - offsetof(struct msgbuf, mtext) - 1)
-
 #ifdef USR_CLOCK_TEST
 
 static const char *clock_test_prefix = NULL;
