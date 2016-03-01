@@ -564,6 +564,7 @@ void clock_handle_message(struct msgbuf *cmd)
 			break;
 		case 'T':
 			/* The %WT command will cause the wall clock display to be terminated.
+			 * TODO check if it should indeed be restartable via %WR or %WS
 			 */
 			++clock_tick;
 			break;
