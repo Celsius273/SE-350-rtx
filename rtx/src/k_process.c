@@ -214,35 +214,6 @@ int k_release_processor(void)
 	return RTX_OK;
 }
 
-/*set the state of the p_pcb to BLOCKED_ON_RESOURCE and enqueue it in the blocked_on_resource queue*/
-int k_enqueue_blocked_on_resource_process(PCB* p_pcb)
-{
-	// Error checking
-	if(p_pcb == NULL){
-		return RTX_ERR;
-	}
-
-	// Change the state of the process to blocked on resource
-	p_pcb->m_state = BLOCKED_ON_RESOURCE;
-
-	// Remove from ready queue, and put it into blocked queue, so we call move_process (which deques from
-	// ready queue, then pushes onto blocked queue
-	move_process(g_ready_queue, g_blocked_on_resource_queue, p_pcb->m_pid);
-
-	return RTX_OK;
-}
-
-/*dequeue the next available process in blocked_on_resource queue*/
-PCB* k_dequeue_blocked_on_resource_process(void)
-{
-	int pid = pop_first_process(g_blocked_on_resource_queue);
-
-	if(pid == -1) {
-		return NULL;
-	}
-	return gp_pcbs[pid];
-}
-
 PCB* k_peek_ready_process_front(void)
 {
 	int pid = peek_front(g_ready_queue);
@@ -252,28 +223,6 @@ PCB* k_peek_ready_process_front(void)
 	}
 	return gp_pcbs[pid];
 }
-
-int k_enqueue_ready_process(PCB *p_pcb)
-{
-	if(NULL == p_pcb) {
-		return RTX_ERR;
-	}
-
-	push_process(g_ready_queue, p_pcb->m_pid, p_pcb->m_priority);
-
-	return RTX_OK;
-}
-
-//TODO: Do we need this?
-
-// PCB* k_dequeue_ready_process(void)
-// {
-// 	return gp_pcbs[pop_first_process(g_ready_queue)];
-//
-// }
-
-
-
 
 int k_set_process_priority(int process_id, int priority) {
 	// TODO check if this is correct, according to the spec.
