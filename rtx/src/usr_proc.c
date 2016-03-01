@@ -225,8 +225,9 @@ void proc1(void)
 		struct msgbuf msg;
 		msg.mtype = DEFAULT;
 		strcpy(msg.mtext, "Hi");
-		send_message(PID_P1, &msg);
-		send_message(PID_P1, &msg);
+		TEST_EXPECT(RTX_ERR, send_message(-1, &msg));
+		TEST_EXPECT(0, send_message(PID_P1, &msg));
+		TEST_EXPECT(0, send_message(PID_P1, &msg));
 		int from = -1;
 		struct msgbuf *m1 = receive_message(&from);
 		TEST_EXPECT(PID_P1, from);
@@ -241,7 +242,7 @@ void proc1(void)
 		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
 		msg->mtype = 42;
 		strcpy(msg->mtext, "42");
-		send_message(PID_P2, msg);
+		TEST_EXPECT(0, send_message(PID_P2, msg));
 	}
 
 	test_transition("Send delayed message", "Receive delayed message");
@@ -333,7 +334,7 @@ void proc2(void)
 		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
 		msg->mtype = 10 + i;
 		sprintf(msg->mtext, "%d", i);
-		delayed_send(PID_P1, msg, i);
+		TEST_EXPECT(0, delayed_send(PID_P1, msg, i));
 	}
 
 	++finished_proc;
