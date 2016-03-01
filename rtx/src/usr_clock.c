@@ -7,6 +7,7 @@
 #ifdef USR_CLOCK_TEST
 #include <stdlib.h>
 #include <ucontext.h>
+#include <queue>
 typedef struct mem_t{
     // Guarantee 8-byte alignment, the largest common alignment
     int m_val[128 / 4] __attribute__ ((aligned (8)));
@@ -18,7 +19,7 @@ typedef struct mem_t{
 #include "common.h"
 
 // Wall clock display
-// Test: gcc -o usr_clock usr_clock.c -DUSR_CLOCK_TEST -Wall -g3 && ./usr_clock
+// Test: g++ -o usr_clock usr_clock.c -DUSR_CLOCK_TEST -Wall -g3 && ./usr_clock
 
 #define MTEXT_MAXLEN (sizeof(mem_t) - offsetof(struct msgbuf, mtext) - 1)
 
@@ -46,7 +47,7 @@ static void kcd_register(const char *cmd_prefix)
 {
 	assert(strlen(cmd_prefix) <= MTEXT_MAXLEN);
 
-	struct msgbuf *p_msg_env = request_memory_block();
+	struct msgbuf *p_msg_env = (struct msgbuf *)request_memory_block();
 	p_msg_env->mtype = KCD_REG;
 	strcpy(p_msg_env->mtext, cmd_prefix);
 	send_message(PID_KCD, p_msg_env);
@@ -55,7 +56,7 @@ static void kcd_register(const char *cmd_prefix)
 #endif
 
 static int crt_printf(const char *fmt, ...) {
-	struct msgbuf *msg = request_memory_block();
+	struct msgbuf *msg = (struct msgbuf *)request_memory_block();
 	int ret;
 	{
 		va_list va;
@@ -84,14 +85,14 @@ static void clock_handle_tick(struct msgbuf *msg)
 		}
 		if ((clock_s = (clock_s + 1) % 60) == 0) {
 			if ((clock_m = (clock_m + 1) % 60) == 0) {
-				if ((clock_h = (clock_h + 1) % 60) == 0) {
+				if ((clock_h = (clock_h + 1) % 24) == 0) {
 					// next day, do nothing
 				}
 			}
 		}
-		msg = memcpy(request_memory_block(), msg, 128);
+		msg = (struct msgbuf *)memcpy(request_memory_block(), msg, 128);
 	} else {
-		msg = request_memory_block();
+		msg = (struct msgbuf *)request_memory_block();
 	}
 
 	crt_printf("Wall clock: %02u:%02u:%02u\n", clock_h, clock_m, clock_s);
@@ -180,11 +181,12 @@ static void test_expect(const char *buf) {
 
 static ucontext_t test_clock, test_main;
 static int test_from;
-static struct msgbuf *test_msgbuf = NULL, *test_delayed_msg = NULL;
+static struct msgbuf *test_msgbuf = NULL;
+static std::queue<struct msgbuf *> test_delayed_msg;
 
 static void test_input(const char *buf) {
 	test_from = PID_KCD;
-	test_msgbuf = request_memory_block();
+	test_msgbuf = (struct msgbuf *)request_memory_block();
 	printf("Test input: %s\n", buf);
 	strcpy(test_msgbuf->mtext, buf);
 	swapcontext(&test_main, &test_clock);
@@ -199,20 +201,19 @@ static int send_message(int dst, struct msgbuf *msg) {
 
 static int delayed_send(int dst, struct msgbuf *msg, int delay_ms) {
 	assert(dst == PID_CLOCK);
-	assert(test_delayed_msg == NULL);
-	test_delayed_msg = msg;
+	test_delayed_msg.push(msg);
 	return RTX_OK;
 }
 
 static void test_sleep(void) {
-	if (!test_delayed_msg) {
+	if (test_delayed_msg.empty()) {
 		return;
 	}
 
 	printf("Sleeping...\n");
 	test_from = PID_CLOCK;
-	test_msgbuf = test_delayed_msg;
-	test_delayed_msg = NULL;
+	test_msgbuf = test_delayed_msg.front();
+	test_delayed_msg.pop();
 	swapcontext(&test_main, &test_clock);
 }
 
@@ -277,5 +278,7 @@ int main(void)
 	test_expect("");
 	test_input("%WS 12:34:56@"); // "valid"
 	test_expect("Wall clock: 12:34:56\n");
+
+	printf("\x1b[32;1mAll passed!\x1b[0m\n");
 }
 #endif
