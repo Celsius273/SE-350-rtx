@@ -386,4 +386,13 @@ void *k_non_blocking_receive_message(int pid)
 }
 
 
-
+int k_enqueue_ready_process(PCB *p_pcb)
+{
+    if(NULL == p_pcb) {
+        return RTX_ERR;
+    }
+    
+    push_process(g_ready_queue, p_pcb->m_pid, p_pcb->m_priority);
+    
+    return RTX_OK;
+}
