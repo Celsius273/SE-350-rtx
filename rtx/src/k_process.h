@@ -58,4 +58,6 @@ void *k_non_blocking_receive_message(int pid);
 void k_enqueue_blocked_on_receive_process(PCB *p_pcb);
 void enqueue_message(MSG_BUF*, void* pq);
 
+int k_delayed_send(int sender_pid, void *p_msg_env, int delay);
+
 #endif /* ! K_PROCESS_H_ */

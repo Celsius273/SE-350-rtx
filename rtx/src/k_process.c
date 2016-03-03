@@ -396,3 +396,9 @@ int k_enqueue_ready_process(PCB *p_pcb)
     
     return RTX_OK;
 }
+
+int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
+{
+		// placeholder
+		return RTX_OK;
+}
