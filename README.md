@@ -55,8 +55,18 @@ The combination of the two kinds of tests allows the first 3 processes to accura
 
 ### Additions for P2
 The test processes were enhanced to test the new IPC primitives.
+Since someone needs to manually test the wall clock process for the keyboard/display messages, the tests can't test the KCD/CRT processes.
+However, any IPC not tested in the wall clock process is tested in the user test processes.
+
 In addition, the strict FIFO ordering requirement was removed because timeslicing can arbitrarily cause a process to be executed out of FIFO order.
 Instead, each test process will release the processor up to `NUM_PROCS` times.
+
+## Wall clock process
+The wall clock process handles user input and shows output to the user, so it has a lot of corner cases with input handling.
+The time formatting was implemented using `sscanf` and `printf`.
+The corner cases were tested on Linux by using the preprocessor to allow the code to run on both Linux and RTX.
+The test process is tested on Linux against a list of simulated inputs and expected outputs.
+However, the code also can run on RTX, as required.
 
 ## Linear list
 To help implement the queueing for processes and for memory management, there's a generic linear list.

@@ -107,10 +107,17 @@ static void clock_handle_message(struct msgbuf *cmd)
 {
 	char c;
 	unsigned int h, m, s;
+	int bytes_read = 0;
 	cmd->mtext[MTEXT_MAXLEN] = '\0';
-	int nread = sscanf(cmd->mtext, "%%W%c %u:%u:%u", &c, &h, &m, &s);
+	int nread = sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);
 	if (nread < 1 || nread != (c == 'S' ? 4 : 1)) {
+		// Didn't convert enough
 		c = '\0';
+	} else {
+		if (cmd->mtext[bytes_read] != '\0') {
+			printf("Command has trailing data: {%s}\n", cmd->mtext + bytes_read);
+			c = '\0';
+		}
 	}
 	switch (c) {
 		case 'T':
@@ -284,8 +291,24 @@ int main(void)
 	test_expect("");
 	test_input("%WS 12:34:567");
 	test_expect("");
-	test_input("%WS 12:34:56@"); // "valid"
+	test_input("%WS 12:34");
+	test_expect("");
+	test_input("%WS 12:34:56 ");
+	test_expect("");
+	test_input("%WS 12:34:56@");
+	test_expect("");
+	test_input("%WS 12:34:56");
 	test_expect("Wall clock: 12:34:56\n");
+
+	printf("\x1b[1mTesting %%WR and %%WT format\x1b[0m\n");
+	strcpy(test_last_line, "");
+	test_input("%WR ");
+	test_input("%WT ");
+	test_input("%WR asdfasdf");
+	test_expect("");
+	// Terminated should not output anything
+	test_input("%WT");
+	test_expect("");
 
 	printf("\x1b[32;1mAll passed!\x1b[0m\n");
 }
