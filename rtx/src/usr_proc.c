@@ -78,14 +78,21 @@ void set_test_procs() {
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
 {
+	// Silently allow for non-FIFO ordering
+	const char *const initial_test_state = test_state;
+	for (int i = 0; i < NUM_TEST_PROCS && test_state != from; ++i) {
+		release_processor();
+	}
 #ifdef DEBUG_0
 	if (from != test_state) {
 		printf(
-			"test_transition(%s, %s) expected state %s, but got %s\n",
+			"test_transition(%s, %s) expected state %s, but got %s (%s after %d tries)\n",
 			from,
 			to,
 			from,
-			test_state
+			initial_test_state,
+			test_state,
+			NUM_TEST_PROCS
 		);
 	}
 #endif
