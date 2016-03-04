@@ -407,9 +407,27 @@ int k_enqueue_ready_process(PCB *p_pcb)
 
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
 {
-	// placeholder
-	// MSG_BUF* p_msg_env
-	// no one modifies msg buffer until send message is called
-	// send_message(...)
+	if(sender_pid < NULL_PID || sender_pid >= NUM_PROCS || delay < 0) {
+		return RTX_ERR;
+	}
+	
+	// If the delay is zero, that means we do not delay, and we just send the message right away
+	if(delay == 0) {
+		return k_send_message(sender_pid, p_msg_env);
+	}
+	
+	/*
+		MSG_BUF *p_msg_envelope = NULL;
+    
+    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg_env - MSG_HEADER_OFFSET); // Requesting without adding?? 
+    p_msg_envelope->m_send_pid = sender_pid;
+    p_msg_envelope->m_recv_pid = gp_current_process->m_pid; */
+	
+	//p_msg_envelope->m_expiry = delay + g_timer_count;
+	
+	 // insert new message into sorted queue (in desc. order of expiry time)
+    //enqueue_delayed_message_in_sorted_order(p_msg_envelope);
+	
+
 	return RTX_OK;
 }
