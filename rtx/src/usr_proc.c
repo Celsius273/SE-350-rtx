@@ -223,8 +223,8 @@ void proc1(void)
 	test_transition("Count blocks", "Send self message");
 	{
 		struct msgbuf *msg = request_memory_block();
-		msg.mtype = DEFAULT;
-		strcpy(msg.mtext, "Hi");
+		msg->mtype = DEFAULT;
+		strcpy(msg->mtext, "Hi");
 		TEST_EXPECT(RTX_ERR, send_message(-1, &msg));
 		TEST_EXPECT(0, send_message(PID_P1, &msg));
 
