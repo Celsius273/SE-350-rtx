@@ -26,14 +26,14 @@ typedef struct msgbuf
 */
 
 // dequeue like a queue
-MSG_BUF *dequeue_message(void* pq); 
+MSG_BUF *dequeue_message(MSG_BUF** p_msg); 
 
-void enqueue_message(MSG_BUF* p_msg, void* pq);
+void enqueue_message(MSG_BUF* p_msg, MSG_BUF** pq);
 // check message (in front)
 // is_empty (different from pid)
-bool is_queue_empty(void* pq);
+bool is_queue_empty(MSG_BUF const *const * p_msg);
 
-MSG_BUF *peek_message(void* pq);
+MSG_BUF *peek_message(MSG_BUF*const * p_msg);
 // looks at the message at the front of the queue
 
 // TODO: add something that finds the first message at/past a given timestamp 

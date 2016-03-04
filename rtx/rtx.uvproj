@@ -461,6 +461,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\priority_queue.c</FilePath>
             </File>
+            <File>
+              <FileName>message_queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\message_queue.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

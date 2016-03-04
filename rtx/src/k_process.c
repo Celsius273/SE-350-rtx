@@ -321,7 +321,7 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     
     p_receiver_pcb = gp_pcbs[receiver_pid];
     
-    enqueue_message(p_msg_envelope, &(p_receiver_pcb->m_msg_queue));		//Kelvin: Add enqueue_message(MSG_BUF*, void* pq) to your priority queue API
+    enqueue_message(&p_msg_envelope, &(p_receiver_pcb->m_msg_queue) );		//Kelvin: Add enqueue_message(MSG_BUF*, void* pq) to your priority queue API
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
