@@ -20,6 +20,7 @@
 #include "k_process.h"
 // FIXME are awe allowed to refer to user code from kernel?
 #include "usr_proc.h"
+#include "list.h"
 // for NULL_PRIO
 #include "rtx.h"
 #include <assert.h>
@@ -34,9 +35,6 @@
 /* ----- Global Variables ----- */
 PCB **gp_pcbs;   /* array of pcbs pointers */
 PCB *gp_current_process = NULL; /* always point to the current RUN process */
-U32 g_switch_flag = 0;          /* whether to continue to run the process before the UART receive interrupt */
-                                /* 1 means to switch to another process, 0 means to continue the current process */
-																/* this value will be set by UART handler */
 
 /* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
 LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
