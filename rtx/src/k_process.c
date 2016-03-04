@@ -324,6 +324,7 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
         remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);		//Kelvin: implement remove_from_queue
         p_receiver_pcb->m_state = RDY;
         k_enqueue_ready_process(p_receiver_pcb);
+				k_check_preemption();
         
         return 1;	//signals that receiver is unblocked and put onto the ready
     } else {
@@ -355,7 +356,7 @@ void *k_receive_message(int *p_sender_pid)
 }
 
 void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
-{
+{		//p_pcb corresponds to the receiver pcb
     void *p_blocked_on_receive_queue = NULL;
     
     if (p_pcb == NULL) {
