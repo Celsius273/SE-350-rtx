@@ -24,6 +24,7 @@
 #include "rtx.h"
 #include <assert.h>
 #include "priority_queue.h"
+#include "message_queue.h"
 #include "k_memory.h"
 
 #ifdef DEBUG_0
@@ -45,6 +46,9 @@ LL_DECLARE(g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of list of processes that are in BLOCKED_ON_RECEIVE state, one for each priority */
 LL_DECLARE(g_blocked_on_receive_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
+
+/* delayed queue for messages */
+MSG_BUF* g_delayed_msg_queue = NULL;
 
 
 /* process initialization table */
@@ -317,7 +321,7 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     
     p_receiver_pcb = gp_pcbs[receiver_pid];
     
-    enqueue_message(p_msg_envelope, &(p_receiver_pcb->m_msg_queue));		//Kelvin: Add enqueue_message(MSG_BUF*, void* pq) to your priority queue API
+    enqueue_message(&p_msg_envelope, &(p_receiver_pcb->m_msg_queue) );		//Kelvin: Add enqueue_message(MSG_BUF*, void* pq) to your priority queue API
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
@@ -367,7 +371,7 @@ void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
 		
     p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
     
-    if (!is_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
+    if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
         //don't re-add the process if it has already been added to the queue
         return;
     }
@@ -398,8 +402,12 @@ int k_enqueue_ready_process(PCB *p_pcb)
     return RTX_OK;
 }
 
+
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
 {
-		// placeholder
-		return RTX_OK;
+	// placeholder
+	// MSG_BUF* p_msg_env
+	// no one modifies msg buffer until send message is called
+	// send_message(...)
+	return RTX_OK;
 }
