@@ -109,11 +109,29 @@ void copy_queue(void* fq, void* tq) {
     clear_queue(fq);
 }
 
-bool is_queue_empty(void* q) {return true;}
-int remove_from_queue(void* pq, int pid_t) {return 1;}	//unlike pop this could be anywhere in the queue
-bool queue_contains_node(void* pq, int pcb_id) {return false;}
-MSG_BUF *dequeue_message(void* pq) {return NULL;} 
-void enqueue_message(MSG_BUF* p_msg, void* pq){};
+
+bool is_pid_queue_empty(void* pq) {
+    pid_pq queue = (pid_pq)pq;
+    return LL_SIZE(*queue) == 0;
+}
+
+
+pid_t remove_from_queue(void* pq, pid_t pid) {
+    pid_pq queue = (pid_pq)pq;
+    LL_REMOVE(*queue, pid);
+    return pid;
+}	//unlike pop this could be anywhere in the queue
+
+
+bool queue_contains_node(void* pq, pid_t pcb_id) {
+    pid_pq queue = (pid_pq)pq;
+    for (int i = 0; i < LL_SIZE(*queue); i++) {
+        if (LL_AT_(*queue, i) == pcb_id) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /*
 // test print function
