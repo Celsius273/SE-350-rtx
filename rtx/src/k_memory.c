@@ -127,7 +127,7 @@ void *k_request_memory_block(void)
 
 int k_release_memory_block_valid(void *p_mem_blk)
 {
-  mem_t *const p_mem = (mem_t *)p_mem_blk;
+  mem_t *const p_mem = (mem_t *)p_mem_blk - MSG_HEADER_OFFSET;
   if(p_mem == NULL){
     return RTX_ERR;
   }

@@ -81,7 +81,7 @@ typedef struct msgbuf
 #define MEM_BLOCK_SIZE 128
 #define MTEXT_MAXLEN (MEM_BLOCK_SIZE - offsetof(struct msgbuf, mtext) - 1)
 
-#define MSG_HEADER_OFFSET 29  //this needs to be updated once timing delay is added
+#define MSG_HEADER_OFFSET 32  //this needs to be updated once timing delay is added
 
 #ifdef DEBUG_0
 #define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
