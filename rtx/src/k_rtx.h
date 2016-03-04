@@ -38,7 +38,6 @@ typedef struct pcb
 	U32 m_pid;		/* process id */
 	PROC_STATE_E m_state;   /* state of the process */
 	int m_priority;         /* current priority */
-	void* m_msg_queue;	/*message queue*/
 } PCB;
 
 #endif // ! K_RTX_H_
