@@ -47,6 +47,9 @@ LL_DECLARE(g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 /* array of list of processes that are in BLOCKED_ON_RECEIVE state, one for each priority */
 LL_DECLARE(g_blocked_on_receive_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
+/* array of message queues (mailbox) for each processes */
+LL_DECLARE (g_message_queues[NUM_PROCS], MSG_BUF*, 30);
+
 /* delayed queue for messages */
 MSG_BUF* g_delayed_msg_queue = NULL;
 
@@ -315,13 +318,13 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
     
-    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg - MSG_HEADER_OFFSET);
+    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg);
     p_msg_envelope->m_send_pid = sender_pid;
     p_msg_envelope->m_recv_pid = receiver_pid;
     
     p_receiver_pcb = gp_pcbs[receiver_pid];
     
-    enqueue_message(&p_msg_envelope, &(p_receiver_pcb->m_msg_queue) );		//Kelvin: Add enqueue_message(MSG_BUF*, void* pq) to your priority queue API
+    LL_PUSH_BACK(g_message_queues[receiver_pid], p_msg_envelope);
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
@@ -340,12 +343,12 @@ void *k_receive_message(int *p_sender_pid)
 {
 	MSG_BUF *p_msg = NULL;
     
-	while (is_queue_empty(&(gp_current_process->m_msg_queue))) {
+	while (LL_SIZE(g_message_queues[gp_current_process->m_pid]) == 0) {
 			k_enqueue_blocked_on_receive_process(gp_current_process);
 			k_release_processor();
 	}
 	
-	p_msg = (MSG_BUF *)dequeue_message(&(gp_current_process->m_msg_queue));		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
+	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[gp_current_process->m_pid]);		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
 	
 	if (p_msg == NULL) {
 			return NULL;
@@ -356,7 +359,7 @@ void *k_receive_message(int *p_sender_pid)
 		*p_sender_pid = p_msg->m_send_pid;
 	}
 	
-	return (void *)((U8 *)p_msg + MSG_HEADER_OFFSET);
+	return (void *)((U8 *)p_msg);
 }
 
 void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
@@ -382,14 +385,13 @@ void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
 
 void *k_non_blocking_receive_message(int pid)
 {
-    if (!is_queue_empty(&(gp_pcbs[pid]->m_msg_queue))) {
-        MSG_BUF *p_msg = (MSG_BUF *)dequeue_message(&(gp_pcbs[pid]->m_msg_queue));
-        return (void *)((U8 *)p_msg + MSG_HEADER_OFFSET);
+    if (!(LL_SIZE(g_message_queues[pid]) == 0)) {
+        MSG_BUF *p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[pid]);
+        return (void *)((U8 *)p_msg);
     } else {
         return NULL;
     }
 }
-
 
 int k_enqueue_ready_process(PCB *p_pcb)
 {

@@ -121,14 +121,13 @@ void *k_request_memory_block(void)
 	}
 	//increment the address the address of the node by the header size to get the start address of the block itslef 
 	p_mem_blk = (U8 *)LL_POP_FRONT(g_heap);
-	p_mem_blk += MSG_HEADER_OFFSET;
 	return (void *)p_mem_blk;	//this is pointing the content not the header
 }
 
 int k_release_memory_block_valid(void *p_mem_blk)
 {
   //when the block is returned adjust the pointer so it points to start of envelope i.e. from header
-	mem_t *const p_mem = (mem_t *)p_mem_blk - MSG_HEADER_OFFSET;
+	mem_t *const p_mem = (mem_t *)p_mem_blk;
   if(p_mem == NULL){
     return RTX_ERR;
   }
