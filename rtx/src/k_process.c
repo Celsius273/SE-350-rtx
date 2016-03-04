@@ -315,7 +315,7 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
     
-    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg - MSG_HEADER_OFFSET);
+    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg);
     p_msg_envelope->m_send_pid = sender_pid;
     p_msg_envelope->m_recv_pid = receiver_pid;
     
@@ -356,7 +356,7 @@ void *k_receive_message(int *p_sender_pid)
 		*p_sender_pid = p_msg->m_send_pid;
 	}
 	
-	return (void *)((U8 *)p_msg + MSG_HEADER_OFFSET);
+	return (void *)((U8 *)p_msg);
 }
 
 void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
@@ -384,7 +384,7 @@ void *k_non_blocking_receive_message(int pid)
 {
     if (!is_queue_empty(&(gp_pcbs[pid]->m_msg_queue))) {
         MSG_BUF *p_msg = (MSG_BUF *)dequeue_message(&(gp_pcbs[pid]->m_msg_queue));
-        return (void *)((U8 *)p_msg + MSG_HEADER_OFFSET);
+        return (void *)((U8 *)p_msg);
     } else {
         return NULL;
     }
