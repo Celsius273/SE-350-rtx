@@ -304,12 +304,16 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 		return RTX_ERR;
 	}
   
+	__disable_irq();
 	if (k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env) == 1) {
 		//if the receiving process is of higher priority, preemption might happen
 		if (gp_pcbs[receiver_pid]->m_priority <= gp_current_process->m_priority) {
-			return k_release_processor();
+			int ret = k_release_processor();
+			__enable_irq();
+			return ret;
 		}
 	}
+	__enable_irq();
 	return RTX_ERR;
 }
 
@@ -318,6 +322,7 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
     
+	  __disable_irq();
     p_msg_envelope = (MSG_BUF *)((U8 *)p_msg);
     p_msg_envelope->m_send_pid = sender_pid;
     p_msg_envelope->m_recv_pid = receiver_pid;
@@ -332,9 +337,10 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
         p_receiver_pcb->m_state = RDY;
         k_enqueue_ready_process(p_receiver_pcb);
 				k_check_preemption();
-        
+			  __enable_irq();
         return 1;	//signals that receiver is unblocked and put onto the ready
     } else {
+			  __enable_irq();
         return 0;
     }
 }
@@ -342,7 +348,8 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 void *k_receive_message(int *p_sender_pid)
 {
 	MSG_BUF *p_msg = NULL;
-    
+	
+	__disable_irq();
 	while (LL_SIZE(g_message_queues[gp_current_process->m_pid]) == 0) {
 			k_enqueue_blocked_on_receive_process(gp_current_process);
 			k_release_processor();
@@ -351,6 +358,7 @@ void *k_receive_message(int *p_sender_pid)
 	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[gp_current_process->m_pid]);		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
 	
 	if (p_msg == NULL) {
+		__enable_irq();
 			return NULL;
 	}
 	
@@ -359,6 +367,7 @@ void *k_receive_message(int *p_sender_pid)
 		*p_sender_pid = p_msg->m_send_pid;
 	}
 	
+	__enable_irq();
 	return (void *)((U8 *)p_msg);
 }
 
@@ -385,10 +394,13 @@ void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
 
 void *k_non_blocking_receive_message(int pid)
 {
+		__disable_irq();
     if (!(LL_SIZE(g_message_queues[pid]) == 0)) {
         MSG_BUF *p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[pid]);
-        return (void *)((U8 *)p_msg);
+        __enable_irq();
+				return (void *)((U8 *)p_msg);
     } else {
+				__enable_irq();
         return NULL;
     }
 }
