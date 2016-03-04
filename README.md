@@ -7,9 +7,11 @@ University of Waterloo SE350 Operating Systems RTX Project Starter Files and Doc
 
 ##### Group Members: Ted Ying, Jobair Hassan, Kelvin Jiang, Pushpak Kumar
 
-The directory contains all of the source code(int rtx subfolder) , uVision project files, and project documentation
+The directory contains all of the source code(in rtx subfolder) , uVision project files, and project documentation
 
 ## User test processes
+### Milestone P1
+
 There are 6 user test processes. The first 3 (the minimum required to test all features) behave like unit tests, testing each case of each function against the specification.
 
 The unit tests were designed with debuggability in mind:
@@ -50,6 +52,11 @@ There's another process (proc4) that changes its own priority repeatedly.
 It guarantees it eventually sets itself to the lowest priority and releases the processor, but it detected a livelock condition.
 
 The combination of the two kinds of tests allows the first 3 processes to accurately report when and how a specific API is failing and the last 3 processes to detect more complex failures.
+
+### Additions for P2
+The test processes were enhanced to test the new IPC primitives.
+In addition, the strict FIFO ordering requirement was removed because timeslicing can arbitrarily cause a process to be executed out of FIFO order.
+Instead, each test process will release the processor up to `NUM_PROCS` times.
 
 ## Linear list
 To help implement the queueing for processes and for memory management, there's a generic linear list.

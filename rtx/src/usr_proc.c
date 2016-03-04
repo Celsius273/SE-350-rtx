@@ -80,7 +80,7 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 {
 	// Silently allow for non-FIFO ordering
 	const char *const initial_test_state = test_state;
-	for (int i = 0; i < NUM_TEST_PROCS && test_state != from; ++i) {
+	for (int i = 0; i < NUM_PROCS && test_state != from; ++i) {
 		release_processor();
 	}
 #ifdef DEBUG_0
