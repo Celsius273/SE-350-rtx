@@ -153,6 +153,7 @@ int uart_irq_init(int n_uart) {
 	return 0;
 }
 
+U32 g_switch_flag = 0; // TODO remove
 
 /**
  * @brief: use CMSIS ISR for UART0 IRQ Handler
