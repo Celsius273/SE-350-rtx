@@ -115,7 +115,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 		c = '\0';
 	} else {
 		if (cmd->mtext[bytes_read] != '\0') {
-			printf("Command has trailing data: {%s}\n", cmd->mtext + bytes_read);
+			//printf("Command has trailing data: {%s}\n", cmd->mtext + bytes_read);
 			c = '\0';
 		}
 	}
@@ -144,7 +144,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 				break;
 			}
 		default:
-			printf("Invalid command: %s\n", cmd->mtext);
+			//printf("Invalid command: %s\n", cmd->mtext);
 			break;
 	}
 }
