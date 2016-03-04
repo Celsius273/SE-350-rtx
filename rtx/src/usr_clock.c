@@ -7,6 +7,7 @@
 #ifdef USR_CLOCK_TEST
 #include <stdlib.h>
 #include <ucontext.h>
+#include <unistd.h>
 #include <queue>
 typedef struct mem_t{
     // Guarantee 8-byte alignment, the largest common alignment
@@ -212,8 +213,21 @@ static void test_sleep(void) {
 }
 
 static void test_sleep_ntimes(int n) {
+	int saved_fd = -1;
 	for (int i = 0; i < n; ++i) {
+		if (i >= 3 && saved_fd == -1) {
+			fflush(stdout);
+			saved_fd = dup(1);
+			freopen("/dev/null", "w", stdout);
+		}
 		test_sleep();
+	}
+	if (saved_fd != -1) {
+		long skipped = ftell(stdout);
+		fflush(stdout);
+		printf("... (skipped %ld bytes)\n", skipped);
+		dup2(saved_fd, 1);
+		close(saved_fd);
 	}
 }
 
