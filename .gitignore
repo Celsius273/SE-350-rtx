@@ -1,0 +1,16 @@
+*.o
+*.d
+*.crf
+*.map
+rtx/rtx.axf
+rtx/rtx.htm
+rtx/rtx.lnp
+rtx/rtx.plg
+rtx/rtx.sct
+rtx/rtx.tra
+rtx/rtx.uvgui.*
+rtx/rtx.uvgui_*.bak
+rtx/rtx_RTX SIM.dep
+rtx/rtx_uvopt.bak
+rtx/rtx_uvproj.bak
+rtx/startup_LPC17xx.lst
