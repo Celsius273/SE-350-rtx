@@ -232,8 +232,8 @@ void proc1(void)
 		struct msgbuf *msg = request_memory_block();
 		msg->mtype = DEFAULT;
 		strcpy(msg->mtext, "Hi");
-		TEST_EXPECT(RTX_ERR, send_message(-1, &msg));
-		TEST_EXPECT(0, send_message(PID_P1, &msg));
+		TEST_EXPECT(0, !send_message(-1, &msg));
+		TEST_EXPECT(0, delayed_send(PID_P1, &msg, 0));
 
 		{
 			int from = -1;
@@ -254,13 +254,17 @@ void proc1(void)
 
 	test_transition("Send self message", "Send other message");
 	test_set_process_priority(PID_P2, HIGH);
-	{
+	test_set_process_priority(PID_P3, HIGH);
+	test_transition("Send other message (2 and 3 blocked)", "Receive other message (2 and 3 blocked)");
+	for (int i = 0; i < 2; ++i) {
+		const static int pids[2] = {PID_P2, PID_P3};
 		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
 		msg->mtype = 42;
 		strcpy(msg->mtext, "42");
-		TEST_EXPECT(0, send_message(PID_P2, msg));
+		TEST_EXPECT(0, send_message(pids[i], msg));
 	}
 
+	test_release_processor();
 	test_transition("Send delayed message", "Receive delayed message");
 	for (int i = 0; i < 3; ++i) {
 		int from = -1;
@@ -289,6 +293,16 @@ void proc1(void)
 	test_printf("END\n");
 	finished = 1;
 	infinite_loop();
+}
+
+static void test_receive_42_from_proc1(void)
+{
+	int from = -1;
+	struct msgbuf *msg = receive_message(&from);
+	TEST_EXPECT(PID_P1, from);
+	TEST_EXPECT(42, msg->mtype);
+	TEST_ASSERT(!strcmp("42", msg->mtext));
+	release_memory_block(msg);
 }
 
 /**
@@ -334,18 +348,13 @@ void proc2(void)
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
 	test_mem_release();
 
-	test_transition("Send other message", "Receive other message");
+	test_transition("Send other message", "Send other message (2 blocked)");
 	TEST_EXPECT(HIGH, test_get_process_priority(PID_P2));
-	{
-		int from = -1;
-		struct msgbuf *msg = receive_message(&from);
-		TEST_EXPECT(PID_P1, from);
-		TEST_EXPECT(42, msg->mtype);
-		TEST_ASSERT(!strcmp("42", msg->mtext));
-	}
-
-	test_transition("Receive other message", "Send delayed message");
+	test_receive_42_from_proc1();
+	test_transition("Receive other message (2 and 3 blocked)", "Receive other message (3 blocked)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
+
+	test_transition("Receive other message (done)", "Send delayed message");
 	for (int i = 2; i >= 0; --i) {
 		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
 		msg->mtype = 10 + i;
@@ -385,6 +394,12 @@ void proc3(void)
 	test_mem_release();
 
 	test_transition("Resource contention (1 blocked again)", "Resource contention resolved");
+	TEST_EXPECT(0, test_set_process_priority(PID_P3, LOWEST));
+
+	test_transition("Send other message (2 blocked)", "Send other message (2 and 3 blocked)");
+	TEST_EXPECT(HIGH, test_get_process_priority(PID_P2));
+	test_receive_42_from_proc1();
+	test_transition("Receive other message (3 blocked)", "Receive other message (done)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P3, LOWEST));
 
 	++finished_proc;
