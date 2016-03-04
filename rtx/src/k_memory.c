@@ -117,11 +117,12 @@ void *k_request_memory_block(void)
         // never set current state to blocked
         // if all we do is release processor
         gp_current_process->m_state = BLOCKED_ON_RESOURCE;
-		k_release_processor();
+				k_release_processor();
 	}
-
+	//increment the address the address of the node by the header size to get the start address of the block itslef 
 	p_mem_blk = (U8 *)LL_POP_FRONT(g_heap);
-	return (void *)p_mem_blk;
+	p_mem_blk += MSG_HEADER_OFFSET;
+	return (void *)p_mem_blk;	//this is pointing the content not the header
 }
 
 int k_release_memory_block_valid(void *p_mem_blk)
