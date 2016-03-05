@@ -7,6 +7,7 @@
 
 #include <LPC17xx.h>
 #include "uart.h"
+#include "k_rtx.h"
 #include "uart_polling.h"
 #ifdef DEBUG_0
 #include "printf.h"
@@ -153,6 +154,7 @@ int uart_irq_init(int n_uart) {
 	return 0;
 }
 
+U32 g_switch_flag = 0; // TODO remove
 
 /**
  * @brief: use CMSIS ISR for UART0 IRQ Handler

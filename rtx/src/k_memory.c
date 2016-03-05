@@ -40,8 +40,6 @@ U8 *gp_heap_end_addr;
           |---------------------------|
           |        PCB 1              |
           |---------------------------|
-          |        PCB pointers       |
-          |---------------------------|<--- gp_pcbs
           |        Padding            |
           |---------------------------|
           |Image$$RW_IRAM1$$ZI$$Limit |
@@ -59,14 +57,6 @@ void memory_init(void)
 
 	/* 4 bytes padding */
 	p_end += 4;
-
-	/* allocate memory for pcb pointers   */
-	gp_pcbs = (PCB **)p_end;
-	p_end += NUM_PROCS * sizeof(PCB *);
-	for ( i = 0; i < NUM_PROCS; i++ ) {
-		gp_pcbs[i] = (PCB *)p_end;
-		p_end += sizeof(PCB);
-	}
 
 	/* prepare for alloc_stack() to allocate memory for stacks */
 	gp_stack = (U32 *)RAM_END_ADDR;
@@ -116,8 +106,7 @@ void *k_request_memory_block(void)
         // not right because: call k
         // never set current state to blocked
         // if all we do is release processor
-        gp_current_process->m_state = BLOCKED_ON_RESOURCE;
-				k_release_processor();
+        k_poll(BLOCKED_ON_RESOURCE);
 	}
 	//increment the address the address of the node by the header size to get the start address of the block itslef 
 	p_mem_blk = (U8 *)LL_POP_FRONT(g_heap);
