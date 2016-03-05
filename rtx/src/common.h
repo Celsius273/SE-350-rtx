@@ -42,6 +42,7 @@
 
 
 /* Process Priority. The bigger the number is, the lower the priority is*/
+#define HIGHEST 0
 #define HIGH    0
 #define MEDIUM  1
 #define LOW     2
