@@ -103,11 +103,11 @@ __asm void TIMER0_IRQHandler(void)
 {
 	PRESERVE8
 	IMPORT c_TIMER0_IRQHandler
-	IMPORT k_check_preemption;
+	IMPORT k_check_preemption_eager
 	PUSH{r4-r11, lr}
 	BL c_TIMER0_IRQHandler
-	POP{r4-r11, pc}
-	BL k_check_preemption
+	POP{r4-r11, lr}
+	B k_check_preemption_eager
 } 
 /**
  * @brief: c TIMER0 IRQ Handler
@@ -124,6 +124,5 @@ void c_TIMER0_IRQHandler(void)
 }
 
 void proc_timer_i(void) {
-//		PCB* previous_pcb_node = gp_current_process;
-   
+	check_delayed_messages();
 }

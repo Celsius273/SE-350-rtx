@@ -271,7 +271,7 @@ int k_get_process_priority(int process_id) {
 	return p_pcb->m_priority;
 }
 
-void k_check_preemption(void) {
+static void k_check_preemption_impl(bool is_eager) {
 	if (k_memory_heap_free_blocks() > 0) {
 		copy_queue(g_blocked_on_resource_queue, g_ready_queue);
 		
@@ -285,11 +285,22 @@ void k_check_preemption(void) {
 
 	pid_t ready = peek_front(g_ready_queue);
 
-	if(ready != PID_NONE && process[running].m_priority > process[ready].m_priority){
+	if(ready != PID_NONE) {
+		// We know this won't wrap
+		const int delta = process[running].m_priority - (int) process[ready].m_priority;
+		if (is_eager ? delta >= 0 : delta > 0){
     	k_release_processor();
-    }
+		}
+	}
 }
 
+void k_check_preemption(void) {
+	k_check_preemption_impl(false);
+}
+
+void k_check_preemption_eager(void) {
+	k_check_preemption_impl(true);
+}
 
 void k_poll(PROC_STATE_E which) {
 	assert(running != PID_NONE);
@@ -310,13 +321,13 @@ void k_poll(PROC_STATE_E which) {
 	k_release_processor();
 }
 
-static int k_enqueue_ready_process(PCB *p_pcb)
+static int k_enqueue_ready_process(pid_t receiver_pid)
 {
-    if(NULL == p_pcb) {
+    if(receiver_pid == PID_NONE) {
         return RTX_ERR;
     }
     
-    push_process(g_ready_queue, p_pcb->m_pid, p_pcb->m_priority);
+    push_process(g_ready_queue, receiver_pid, process[receiver_pid].m_priority);
     
     return RTX_OK;
 }
@@ -339,7 +350,7 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
         p_receiver_pcb->m_state = RDY;
-        k_enqueue_ready_process(p_receiver_pcb);
+        k_enqueue_ready_process(receiver_pid);
     } 
 		
 		__enable_irq();
@@ -362,7 +373,7 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	if (!validate_message(receiver_pid, p_msg_env)) {
 		return RTX_ERR;
 	}
-  
+
 	__disable_irq();
 	k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env);
 		//if the receiving process is of higher priority, preemption might happen
@@ -438,4 +449,12 @@ int k_delayed_send(int receiver_id, void *p_msg_env, int delay) {
     enqueue_message(p_msg_envelope, &g_delayed_msg_queue);
 	
 		return RTX_OK;
+}
+
+void check_delayed_messages(void) {
+	__disable_irq();
+	for (MSG_BUF *msg; msg = dequeue_message(&g_delayed_msg_queue);) {
+		k_send_message_helper(msg->m_send_pid, msg->m_recv_pid, msg);
+	}
+	__enable_irq();
 }

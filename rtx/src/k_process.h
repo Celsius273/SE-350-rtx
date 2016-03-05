@@ -33,9 +33,13 @@ extern void set_test_procs(void);      /* test process initial set up */
 // Preempt the current process if needed.
 // Does nothing if already preempted.
 void k_check_preemption(void);
+void k_check_preemption_eager(void);
 // Suspend the process until an event is triggered.
 // which is one of: RDY, BLOCKED_ON_RESOURCE, or BLOCKED_ON_RECEIVE
 void k_poll(PROC_STATE_E which);
+// Unblock processes receiving delayed messages.
+// Move the messages to the appropriate queue.
+void check_delayed_messages(void);
 
 // System calls
 int k_set_process_priority(int process_id, int priority);

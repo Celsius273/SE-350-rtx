@@ -169,72 +169,14 @@ void proc1(void)
 	test_printf("START\n");
 	test_printf("total %d tests\n", NUM_TESTS);
 
-	// int test_release_processor();
-	// This primitive transfers the control to the RTX (the calling process voluntarily releases
-	// the processor). The invoking process remains ready to execute and is put at the end of the
-	// ready queue of the same priority. Another process may possibly be selected for execution.
-	test_transition(test_state, "FIFO scheduling");
-	assert(proc2_work_remaining == 3);
-	for (int i = 2; i >= 0; --i) {
-		TEST_EXPECT(0, test_release_processor());
-		TEST_EXPECT(i, proc2_work_remaining);
-		TEST_EXPECT(i, proc3_work_remaining);
-	}
-
-	test_transition("FIFO scheduling", "Equal priority memory blocking");
-	while (test_state == "Equal priority memory blocking") {
-		test_mem_request();
-	}
-
-	// We should have been unblocked
-	test_transition("Equal priority memory unblocked", "Get priority");
-	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P1));
-	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P2));
-	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
-	TEST_EXPECT(RTX_ERR, test_get_process_priority(NUM_TEST_PROCS + 1));
-	TEST_EXPECT(4, test_get_process_priority(PID_NULL));
-
-	test_transition("Get priority", "Set null priority");
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_NULL, -1));
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_NULL, 0));
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_NULL, 3));
-	TEST_EXPECT(0, test_set_process_priority(PID_NULL, 4));
-
-	test_transition("Set null priority", "Set user priority (no-op)");
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_P1, -1));
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_P1, 4));
-	TEST_EXPECT(0, test_set_process_priority(PID_P1, test_get_process_priority(PID_P1)));
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, test_get_process_priority(PID_P2)));
-
-	test_transition("Set user priority (no-op)", "Set user priority (higher)");
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
-
-	test_transition("Set user priority (inversion 2)", "Preempt (inversion)");
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, HIGH));
-	test_mem_release();
-
-	test_transition("Set user priority (lower)", "Release processor (max priority)");
-	// We're priority LOW, so we should still run.
-	TEST_EXPECT(0, test_release_processor());
-
-	test_transition("Release processor (max priority)", "Resource contention (1 blocked)");
-	test_mem_request();
-
-	test_transition("Resource contention resolved", "Count blocks");
-	int blocks = 0;
-	while (test_mem_front != NULL) {
-		test_mem_release();
-		++blocks;
-	}
-	TEST_ASSERT(blocks >= 30);
-
-	test_transition("Count blocks", "Send self message");
+	test_transition(test_state, "Send self message");
 	{
 		struct msgbuf *msg = request_memory_block();
 		msg->mtype = DEFAULT;
 		strcpy(msg->mtext, "Hi");
-		TEST_EXPECT(0, !send_message(-1, &msg));
-		TEST_EXPECT(0, delayed_send(PID_P1, &msg, 0));
+		TEST_EXPECT(0, !send_message(-1, msg));
+		//TEST_EXPECT(0, delayed_send(PID_P1, msg, 0));
+		TEST_EXPECT(0, send_message(PID_P1, msg));
 
 		{
 			int from = -1;
@@ -245,7 +187,7 @@ void proc1(void)
 		}
 
 		{
-			TEST_EXPECT(0, send_message(PID_P1, &msg));
+			TEST_EXPECT(0, send_message(PID_P1, msg));
 			struct msgbuf *m2 = receive_message(NULL);
 			TEST_ASSERT(!strcmp("Hi", m2->mtext));
 		}
@@ -312,42 +254,6 @@ static void test_receive_42_from_proc1(void)
 void proc2(void)
 {
 	printf("Started %s\n", __FUNCTION__);
-	while (proc2_work_remaining > 0) {
-		TEST_EXPECT(proc3_work_remaining, proc2_work_remaining);
-		--proc2_work_remaining;
-		TEST_EXPECT(0, test_release_processor());
-	}
-
-	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
-	// Let's free enough memory
-	test_mem_release();
-	test_mem_release();
-
-	test_transition("Equal priority memory unblocking", "Equal priority memory unblocking 2");
-	// Should schedule proc3 since proc1 was preempted recently
-	TEST_EXPECT(0, test_release_processor());
-
-	test_transition("Set user priority (higher)", "Set user priority (inversion)");
-	for (int i = 0; i < 3 && test_state == "Set user priority (inversion)"; ++i) {
-		test_mem_request();
-	}
-
-	test_transition("Preempt (inversion)", "Set priority preempt (failed)");
-	TEST_EXPECT(0, test_set_process_priority(PID_P1, LOW));
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
-
-	test_transition("Set priority preempt (failed)", "Set user priority (lower, tied)");
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOW));
-
-	test_transition("Set user priority (lower, tied)", "Set user priority (lower)");
-	// Move ourselves after proc3 in the ready queue
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
-
-	test_transition("Resource contention (1 and 3 blocked)", "Resource contention (3 and 1 blocked)");
-	TEST_EXPECT(0, test_set_process_priority(PID_P3, HIGH));
-	TEST_EXPECT(0, test_set_process_priority(PID_P1, LOWEST));
-	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
-	test_mem_release();
 
 	test_transition("Send other message", "Send other message (2 blocked)");
 	TEST_EXPECT(HIGH, test_get_process_priority(PID_P2));
@@ -374,28 +280,6 @@ void proc2(void)
 void proc3(void)
 {
 	printf("Started %s\n", __FUNCTION__);
-	while (proc3_work_remaining > 0) {
-		--proc3_work_remaining;
-		TEST_EXPECT(proc2_work_remaining, proc3_work_remaining);
-		TEST_EXPECT(0, test_release_processor());
-	}
-
-	// Since proc1 was preempted, it's at the back of the ready queue
-	// Let's run it.
-	test_transition("Equal priority memory unblocking 2", "Equal priority memory unblocked");
-	test_release_processor();
-
-	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
-	test_release_processor();
-
-	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");
-	test_mem_request();
-
-	test_transition("Resource contention (3 and 1 blocked)", "Resource contention (1 blocked again)");
-	test_mem_release();
-
-	test_transition("Resource contention (1 blocked again)", "Resource contention resolved");
-	TEST_EXPECT(0, test_set_process_priority(PID_P3, LOWEST));
 
 	test_transition("Send other message (2 blocked)", "Send other message (2 and 3 blocked)");
 	TEST_EXPECT(HIGH, test_get_process_priority(PID_P2));
