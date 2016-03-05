@@ -15,7 +15,7 @@
 #include "usr_proc.h"
 #include "printf.h"
 
-#define NUM_TESTS 186
+#define NUM_TESTS 222
 #define GROUP_ID "004"
 
 #define test_printf(...) printf("G" GROUP_ID "_test: " __VA_ARGS__)

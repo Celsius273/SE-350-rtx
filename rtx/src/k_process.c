@@ -301,7 +301,11 @@ void k_check_preemption(void) {
 }
 
 void k_check_preemption_eager(void) {
-	k_check_preemption_impl(true);
+	static int millis = 0;
+	millis = (millis + 1) % 100;
+	if (millis == 0) {
+		k_check_preemption_impl(true);
+	}
 }
 
 void k_poll(PROC_STATE_E which) {
