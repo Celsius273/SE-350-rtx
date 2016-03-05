@@ -9,9 +9,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "list.h"
-#include "rtx.h"
-#include "k_process.h"
+#include "common.h"
 
 /*
 typedef struct msgbuf
