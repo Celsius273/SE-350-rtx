@@ -216,7 +216,7 @@ void proc1(void)
 	test_transition("Set user priority (no-op)", "Set user priority (higher)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
 
-	test_transition("Set user priority (inversion 2)", "Preempt (inversion)");
+	test_transition("Set user priority (inversion)", "Preempt (inversion)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, HIGH));
 	test_mem_release();
 
@@ -333,7 +333,7 @@ void proc2(void)
 	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
-	for (int i = 0; i < 30 && test_state == "Set user priority (inversion)"; ++i) {
+	for (int i = 0; i < 3 && test_state == "Set user priority (inversion)"; ++i) {
 		test_mem_request();
 	}
 
@@ -383,9 +383,6 @@ void proc3(void)
 	// Since proc1 was preempted, it's at the back of the ready queue
 	// Let's run it.
 	test_transition("Equal priority memory unblocking 2", "Equal priority memory unblocked");
-	test_release_processor();
-
-	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
 	test_release_processor();
 
 	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");
