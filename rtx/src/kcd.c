@@ -2,7 +2,6 @@
 #include <string.h>
 #include "uart_polling.h"
 #include "rtx.h"
-#include "k_process.h"
 #include "common.h"
 #include "message_queue.h"
 #include "kcd.h"
@@ -19,7 +18,7 @@ static void kcd_process_keyboard_input(MSG_BUF* message) {
 	char *text = message->mtext;
     for (MSG_BUF *cur = entries; cur; cur = cur->mp_next) {
         if (strncmp(text, cur->mtext, strlen(cur->mtext)) == 0) {
-            k_send_message(cur->m_recv_pid, memcpy(k_request_memory_block(), message, 128));
+            send_message(cur->m_recv_pid, memcpy(request_memory_block(), message, 128));
         }
     }
 }
@@ -38,7 +37,7 @@ void proc_kcd(void) {
 	//init_kcd_process();
 	int sender_id;
 	while (1) {
-		MSG_BUF* message = (MSG_BUF *)k_receive_message(&sender_id);
+		MSG_BUF* message = (MSG_BUF *)receive_message(&sender_id);
 
 
 		if (message == NULL) {
@@ -59,6 +58,6 @@ void proc_kcd(void) {
 			uart1_put_string("ERROR: The KCD received a message that was not of type command registration or keyboard input!\n");
 		}
         
-        k_release_memory_block(message);
+        release_memory_block(message);
 	}
 }
