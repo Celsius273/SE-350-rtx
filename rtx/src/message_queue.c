@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "common.h"
+#include "timer.h"
 #include "message_queue.h"
 
 /*
@@ -27,7 +28,7 @@ MSG_BUF *dequeue_message(MSG_BUF** msg_queue) {
 
     // TODO: Jobair: the test you see at the end of the file will probably break,
     // you may want to consult me (Kelvin)
-    int current_time = 90000; // TODO: Jobair: please implement g_delay_count
+    int current_time = g_timer_count;
 
     MSG_BUF* msg_to_dequeue = *msg_queue;
     if (msg_to_dequeue->m_kdata[0] > current_time) {

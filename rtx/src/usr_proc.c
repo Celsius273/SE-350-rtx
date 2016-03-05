@@ -333,7 +333,7 @@ void proc2(void)
 	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
-	for (int i = 0; i < 3 && test_state == "Set user priority (inversion)"; ++i) {
+	for (int i = 0; i < 30 && test_state == "Set user priority (inversion)"; ++i) {
 		test_mem_request();
 	}
 
