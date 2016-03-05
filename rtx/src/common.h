@@ -39,6 +39,7 @@
 #define PID_CRT          13
 #define PID_TIMER_IPROC  14
 #define PID_UART_IPROC   15
+#define MAX_PID 15
 
 
 /* Process Priority. The bigger the number is, the lower the priority is*/

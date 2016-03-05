@@ -60,10 +60,10 @@ static void infinite_loop(void)
 }
 
 /* process initialization table */
-const PROC_INIT g_proc_table[] = {
-	// m_pid		m_priority		m_stack_size		mpf_start_pc
-	{PID_NULL,		NULL_PRIO,		0x100,				&infinite_loop},
-	{PID_CLOCK,		HIGHEST,		0x100,				&proc_clock},
+const static PROC_INIT g_proc_table[] = {
+	// m_pid      m_priority      m_stack_size  mpf_start_pc
+	{PID_NULL,    NULL_PRIO,      0x100,        &infinite_loop},
+	{PID_CLOCK,   HIGHEST,        0x100,        &proc_clock},
 };
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
@@ -108,8 +108,8 @@ void process_init()
 	set_test_procs();
 
 	// Make sure we have the right number of non-test processes
-	assert(sizeof(g_proc_table) / sizeof(g_proc_table[0]) == NUM_PROCS - NUM_TEST_PROCS);
-	initialize_processes(g_proc_table, NUM_PROCS - NUM_TEST_PROCS);
+	// Fix this in k_process.h
+	initialize_processes(g_proc_table, sizeof(g_proc_table) / sizeof(g_proc_table[0]));
 	initialize_processes(g_test_procs, NUM_TEST_PROCS);
 	// Make sure we got all the PIDs, or fill them with null
 	for (int i = 0; i < NUM_PROCS; ++i) {

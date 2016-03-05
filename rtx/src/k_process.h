@@ -17,7 +17,7 @@
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
 
-#define NUM_PROCS (NUM_TEST_PROCS + 1)
+#define NUM_PROCS (MAX_PID + 1)
 
 typedef int pid_t;
 
