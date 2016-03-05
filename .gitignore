@@ -2,6 +2,7 @@
 *.d
 *.crf
 *.map
+*.__i
 rtx/rtx.axf
 rtx/rtx.htm
 rtx/rtx.lnp

@@ -25,6 +25,7 @@
 #include "priority_queue.h"
 #include "message_queue.h"
 #include "k_memory.h"
+#include "timer.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -344,15 +345,21 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 		__enable_irq();
 }
 
+static bool validate_message(int receiver_pid, void *p_msg_env) {
+	if (p_msg_env == NULL) {
+		return false;
+	}
+    
+  if (receiver_pid < 0 || receiver_pid >= NUM_PROCS) {
+		return false;
+	}
+	return true;
+}
 
 /*Inter Process Communication Methods*/
 int k_send_message(int receiver_pid, void *p_msg_env)
 {
-	if (p_msg_env == NULL) {
-		return RTX_ERR;
-	}
-    
-  if (receiver_pid < 0 || receiver_pid >= NUM_PROCS) {
+	if (!validate_message(receiver_pid, p_msg_env)) {
 		return RTX_ERR;
 	}
   
@@ -410,29 +417,25 @@ void *k_non_blocking_receive_message(int pid)
     }
 }
 
-int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
-{
-	if(sender_pid < PID_NULL || sender_pid >= NUM_PROCS || delay < 0) {
+int k_delayed_send(int receiver_id, void *p_msg_env, int delay) {
+	if (!validate_message(receiver_id, p_msg_env)) {
 		return RTX_ERR;
 	}
 	
 	// If the delay is zero, that means we do not delay, and we just send the message right away
-	if(delay == 0) {
-		return k_send_message(sender_pid, p_msg_env);
+	if (delay == 0) {
+		return k_send_message(receiver_id, p_msg_env);
 	}
 	
-	/*
-		MSG_BUF *p_msg_envelope = NULL;
-    
-    p_msg_envelope = (MSG_BUF *)((U8 *)p_msg_env - MSG_HEADER_OFFSET); // Requesting without adding?? 
-    p_msg_envelope->m_send_pid = sender_pid;
-    p_msg_envelope->m_recv_pid = process[running].m_pid; */
-	
-	//p_msg_envelope->m_expiry = delay + g_timer_count;
-	
-	 // insert new message into sorted queue (in desc. order of expiry time)
-    //enqueue_delayed_message_in_sorted_order(p_msg_envelope);
-	
+		MSG_BUF *const p_msg_envelope = p_msg_env;
 
-	return RTX_OK;
+		assert(running != PID_NONE);
+    p_msg_envelope->m_send_pid = process[running].m_pid;
+    p_msg_envelope->m_recv_pid = receiver_id;
+		p_msg_envelope->m_kdata[0] = delay + g_timer_count;
+
+	 // insert new message into sorted queue (in desc. order of expiry time)
+    enqueue_message(p_msg_envelope, &g_delayed_msg_queue);
+	
+		return RTX_OK;
 }
