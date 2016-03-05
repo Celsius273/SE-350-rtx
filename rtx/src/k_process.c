@@ -282,7 +282,6 @@ void k_poll(PROC_STATE_E which) {
 	p_pcb->m_state = which;
 	switch (which) {
 		case RDY:
-			assert(false); // TODO support this
 			break;
 		case BLOCKED_ON_RESOURCE:
 			// Hacked in k_release_processor
