@@ -15,7 +15,7 @@
 #include "usr_proc.h"
 #include "printf.h"
 
-#define NUM_TESTS 222
+#define NUM_TESTS 221
 #define GROUP_ID "004"
 
 #define test_printf(...) printf("G" GROUP_ID "_test: " __VA_ARGS__)
@@ -240,8 +240,8 @@ void proc1(void)
 		struct msgbuf *msg = request_memory_block();
 		msg->mtype = DEFAULT;
 		strcpy(msg->mtext, "Hi");
-		TEST_EXPECT(0, !send_message(-1, &msg));
-		TEST_EXPECT(0, delayed_send(PID_P1, &msg, 0));
+		TEST_EXPECT(0, !send_message(-1, msg));
+		TEST_EXPECT(0, delayed_send(PID_P1, msg, 0));
 
 		{
 			int from = -1;
@@ -252,7 +252,7 @@ void proc1(void)
 		}
 
 		{
-			TEST_EXPECT(0, send_message(PID_P1, &msg));
+			TEST_EXPECT(0, send_message(PID_P1, msg));
 			struct msgbuf *m2 = receive_message(NULL);
 			TEST_ASSERT(!strcmp("Hi", m2->mtext));
 		}
@@ -365,7 +365,7 @@ void proc2(void)
 		struct msgbuf *msg = (struct msgbuf *)request_memory_block();
 		msg->mtype = 10 + i;
 		sprintf(msg->mtext, "%d", i);
-		TEST_EXPECT(0, delayed_send(PID_P1, msg, i));
+		TEST_EXPECT(0, delayed_send(PID_P1, msg, i * 100));
 	}
 
 	++finished_proc;
