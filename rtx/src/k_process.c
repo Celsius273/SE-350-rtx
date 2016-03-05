@@ -300,20 +300,17 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 		return RTX_ERR;
 	}
     
-  if (receiver_pid < 0 || receiver_pid >= NUM_PROCS) {
+  if ((receiver_pid < 1 || receiver_pid >= NUM_PROCS) && (receiver_pid != PID_CRT) &&  (receiver_pid != PID_KCD)) {
 		return RTX_ERR;
 	}
   
-	if (k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env) == 1) {
-		//if the receiving process is of higher priority, preemption might happen
-		if (gp_pcbs[receiver_pid]->m_priority <= gp_current_process->m_priority) {
-			return k_release_processor();
-		}
-	}
-	return RTX_ERR;
+	k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env);
+	k_check_preemption(); // A process might have been unblocked from blocked on receive queue, so we unblock
+	
+	return RTX_OK;
 }
 
-int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
+void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 {
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
@@ -328,19 +325,18 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
-        remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);		//Kelvin: implement remove_from_queue
+        remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);
         p_receiver_pcb->m_state = RDY;
-        k_enqueue_ready_process(p_receiver_pcb);
-				k_check_preemption();
-        
-        return 1;	//signals that receiver is unblocked and put onto the ready
-    } else {
-        return 0;
-    }
+        k_enqueue_ready_process(p_receiver_pcb);           
+    } 	
 }
 
 void *k_receive_message(int *p_sender_pid)
 {
+	if ((*p_sender_pid < 1 || *p_sender_pid >= NUM_PROCS) && (*p_sender_pid != PID_CRT) &&  (*p_sender_pid != PID_KCD)) {
+		return;
+	}
+	
 	MSG_BUF *p_msg = NULL;
     
 	while (LL_SIZE(g_message_queues[gp_current_process->m_pid]) == 0) {
@@ -348,7 +344,7 @@ void *k_receive_message(int *p_sender_pid)
 			k_release_processor();
 	}
 	
-	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[gp_current_process->m_pid]);		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
+	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[gp_current_process->m_pid]);
 	
 	if (p_msg == NULL) {
 			return NULL;
@@ -374,7 +370,7 @@ void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
 		
     p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
     
-    if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
+    if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {
         //don't re-add the process if it has already been added to the queue
         return;
     }
