@@ -14,8 +14,7 @@ typedef struct mem_t{
     int m_val[128 / 4] __attribute__ ((aligned (8)));
 } mem_t;
 #else
-#include "k_rtx.h"
-#include "k_memory.h"
+#include "rtx.h"
 #include "usr_clock.h"
 #include "printf.h"
 #endif
