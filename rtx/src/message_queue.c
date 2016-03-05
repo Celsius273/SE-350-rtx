@@ -91,3 +91,25 @@ msg->mp_next = *msg_queue;
 *msg_queue = msg;
 return;
 */
+
+#ifdef MESSAGE_QUEUE_TEST
+
+
+int main(void) {
+    message_queue_t q = NULL;
+    assert(is_queue_empty(&q));
+    MSG_BUF m1 = {
+        .mtype = 0,
+        .mtext = {'b'},
+
+        .mp_next = NULL,
+        .m_send_pid = 1,
+        .m_recv_pid = 2,
+        .m_kdata = {1}
+    };
+
+    
+}
+
+
+#endif
