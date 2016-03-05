@@ -209,10 +209,11 @@ int k_release_processor(void)
 		svc indirect calls release processor, user space calls it
 
 	*/
-	if (p_pcb_old->m_state == BLOCKED_ON_RESOURCE) {
+	if (p_pcb_old->m_state == BLOCKED_ON_RECEIVE) {
+		push_process(g_blocked_on_receive_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+	} else if (p_pcb_old->m_state == BLOCKED_ON_RESOURCE) {
 		push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
-	}
-	else {
+	} else {
 		push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
 	}
 
@@ -304,8 +305,10 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 		return RTX_ERR;
 	}
   
+	__disable_irq();
 	k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env);
 	k_check_preemption(); // A process might have been unblocked from blocked on receive queue, so we unblock
+	__enable_irq();
 	
 	return RTX_OK;
 }
@@ -315,6 +318,8 @@ void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
     
+	  __disable_irq();
+	
     p_msg_envelope = (MSG_BUF *)((U8 *)p_msg);
     p_msg_envelope->m_send_pid = sender_pid;
     p_msg_envelope->m_recv_pid = receiver_pid;
@@ -327,18 +332,18 @@ void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
         remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);
         p_receiver_pcb->m_state = RDY;
-        k_enqueue_ready_process(p_receiver_pcb);           
-    } 	
+        k_enqueue_ready_process(p_receiver_pcb);
+    } 
+		
+		__enable_irq();
 }
 
 void *k_receive_message(int *p_sender_pid)
 {
-	if ((*p_sender_pid < 1 || *p_sender_pid >= NUM_PROCS) && (*p_sender_pid != PID_CRT) &&  (*p_sender_pid != PID_KCD)) {
-		return;
-	}
-	
 	MSG_BUF *p_msg = NULL;
-    
+	
+	__disable_irq();
+	
 	while (LL_SIZE(g_message_queues[gp_current_process->m_pid]) == 0) {
 			k_enqueue_blocked_on_receive_process(gp_current_process);
 			k_release_processor();
@@ -347,6 +352,8 @@ void *k_receive_message(int *p_sender_pid)
 	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[gp_current_process->m_pid]);
 	
 	if (p_msg == NULL) {
+		__enable_irq();
+		
 			return NULL;
 	}
 	
@@ -354,6 +361,8 @@ void *k_receive_message(int *p_sender_pid)
 		//Note the sender_id is an output parameter and is not meant to filter which message to receive.
 		*p_sender_pid = p_msg->m_send_pid;
 	}
+	
+	__enable_irq();
 	
 	return (void *)((U8 *)p_msg);
 }
@@ -376,15 +385,19 @@ void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
     }
     
     /* put process in the blocked-on-receive-queue */
-    push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
+    //push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
 }
 
 void *k_non_blocking_receive_message(int pid)
 {
+		__disable_irq();
+
     if (!(LL_SIZE(g_message_queues[pid]) == 0)) {
         MSG_BUF *p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[pid]);
-        return (void *)((U8 *)p_msg);
+        __enable_irq();
+				return (void *)((U8 *)p_msg);
     } else {
+				__enable_irq();
         return NULL;
     }
 }

@@ -52,7 +52,7 @@ void k_check_preemption(void);
 
 /*Inter Process Communication*/
 int k_send_message(int receiver_pid, void *p_msg_env);
-int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg_env);
+void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg_env);
 void *k_receive_message(int *sender_id);
 void *k_non_blocking_receive_message(int pid);
 void k_enqueue_blocked_on_receive_process(PCB *p_pcb);
