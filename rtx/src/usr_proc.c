@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stddef.h>
 #include "rtx.h"
 #include "k_process.h"
 #include "usr_proc.h"

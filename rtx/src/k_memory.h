@@ -23,7 +23,6 @@ typedef struct mem_t{
 /* ----- Variables ----- */
 /* This symbol is defined in the scatter file (see RVCT Linker User Guide) */
 extern unsigned int Image$$RW_IRAM1$$ZI$$Limit;
-extern PCB **gp_pcbs;
 
 /* ----- Functions ------ */
 void memory_init(void);

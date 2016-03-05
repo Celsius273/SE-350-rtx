@@ -226,8 +226,7 @@ int k_set_process_priority(int process_id, int priority) {
 	}
 
 
-	PCB *p_pcb = NULL;
-	p_pcb = gp_pcbs[process_id];
+	PCB *p_pcb = &process[process_id];
 
 	// If priority is the same already, then just return
 	if(p_pcb->m_priority == priority) {
@@ -252,7 +251,7 @@ int k_get_process_priority(int process_id) {
 	}
 
 	// Get the pcb from the pid
-	PCB *p_pcb = gp_pcbs[process_id];
+	PCB *p_pcb = &process[process_id];
 
 	return p_pcb->m_priority;
 }
@@ -262,7 +261,7 @@ void k_check_preemption(void) {
 		copy_queue(g_blocked_on_resource_queue, g_ready_queue);
 		
 		for(int i = 0; i < NUM_PROCS; ++i) {
-			PCB* pcb = gp_pcbs[i];
+			PCB* pcb = &process[i];
 			if(pcb->m_state == BLOCKED_ON_RESOURCE) {
 				pcb->m_state = RDY;
 			}
@@ -306,7 +305,7 @@ static int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     p_msg_envelope->m_send_pid = sender_pid;
     p_msg_envelope->m_recv_pid = receiver_pid;
     
-    p_receiver_pcb = gp_pcbs[receiver_pid];
+    p_receiver_pcb = &process[receiver_pid];
     
     LL_PUSH_BACK(g_message_queues[receiver_pid], p_msg_envelope);
 		
@@ -349,17 +348,16 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	return RTX_ERR;
 }
 
-void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
-{		//p_pcb corresponds to the receiver pcb
-    void *p_blocked_on_receive_queue = NULL;
-    
-    if (p_pcb == NULL) {
+void k_enqueue_blocked_on_receive_process(void)
+{		//running corresponds to the receiver pcb
+    if (running == -1) {
         return;
     }
     
+	PCB *p_pcb = &process[running];
     p_pcb->m_state = BLOCKED_ON_RECEIVE;
-		
-    p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
+
+    void *p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
     
     if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
         //don't re-add the process if it has already been added to the queue
@@ -376,7 +374,7 @@ void *k_receive_message(int *p_sender_pid)
 	
 	__disable_irq();
 	while (LL_SIZE(g_message_queues[process[running].m_pid]) == 0) {
-			k_enqueue_blocked_on_receive_process(gp_current_process);
+			k_enqueue_blocked_on_receive_process();
 			k_release_processor();
 	}
 	
