@@ -123,7 +123,8 @@ static void scheduler(void)
 			peek_priority = process[peek_pid].m_priority;
 		}
 	
-		if(running != PID_NONE && peek_priority > process[running].m_priority && process[running].m_state != BLOCKED_ON_RESOURCE) {
+		if(running != PID_NONE && peek_priority > process[running].m_priority &&
+				(process[running].m_state != BLOCKED_ON_RESOURCE && process[running].m_state != BLOCKED_ON_RECEIVE)) {
 			return;
 		}
 		
@@ -146,11 +147,11 @@ static void scheduler(void)
 static int process_switch(pid_t old_pid)
 {
 	const PROC_STATE_E state = process[running].m_state;
-	PCB *const p_pcb_old = &process[old_pid];
 
 	if (state == NEW) {
-		if (running != old_pid && p_pcb_old->m_state != NEW) {
-			p_pcb_old->m_state = RDY;
+		if (old_pid != PID_NONE && running != old_pid) {
+			PCB *const p_pcb_old = &process[old_pid];
+			assert(p_pcb_old->m_state != NEW);
 			p_pcb_old->mp_sp = (U32 *) __get_MSP();
 		}
 		process[running].m_state = RUN;
@@ -161,13 +162,17 @@ static int process_switch(pid_t old_pid)
 	/* The following will only execute if the if block above is FALSE */
 
 	if (running != old_pid) {
-		if (state == RDY){
-			p_pcb_old->m_state = RDY;
-			p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
+		if (state == RDY) {
+			if (old_pid != PID_NONE) {
+				PCB *const p_pcb_old = &process[old_pid];
+				assert(p_pcb_old->m_state != NEW);
+				p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
+			}
 			process[running].m_state = RUN;
 			__set_MSP((U32) process[running].mp_sp); //switch to the new proc's stack
 		} else {
 			running = old_pid; // revert back to the old proc on error
+			assert(false);
 			return RTX_ERR;
 		}
 	}
@@ -210,7 +215,7 @@ int k_release_processor(void)
 				break;
 			case RUN:
 				p_pcb_old->m_state = RDY;
-			case RDY:
+			case RDY: // fall-through
 				push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
 				break;
 			default:
@@ -354,8 +359,8 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	__disable_irq();
 	k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env);
 		//if the receiving process is of higher priority, preemption might happen
-	
 	__enable_irq();
+
 	k_check_preemption();
 	
 	return RTX_OK;
@@ -367,7 +372,10 @@ void *k_receive_message(int *p_sender_pid)
 	
 	__disable_irq();
 	while (LL_SIZE(g_message_queues[process[running].m_pid]) == 0) {
+		__enable_irq();
 		k_poll(BLOCKED_ON_RECEIVE);
+	__disable_irq();
+		assert(LL_SIZE(g_message_queues[process[running].m_pid]) > 0);
 	}
 	
 	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[process[running].m_pid]);
