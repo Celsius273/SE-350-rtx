@@ -25,7 +25,9 @@ MSG_BUF *dequeue_message(MSG_BUF** msg_queue) {
         return NULL;
     }
 
-    int current_time = 0; // TODO: Jobair: please implement g_delay_count
+    // TODO: Jobair: the test you see at the end of the file will probably break,
+    // you may want to consult me (Kelvin)
+    int current_time = 90000; // TODO: Jobair: please implement g_delay_count
 
     MSG_BUF* msg_to_dequeue = *msg_queue;
     if (msg_to_dequeue->m_kdata[0] > current_time) {
@@ -92,24 +94,110 @@ msg->mp_next = *msg_queue;
 return;
 */
 
+
+
 #ifdef MESSAGE_QUEUE_TEST
+// gcc -o message_queue message_queue.c -DMESSAGE_QUEUE_TEST -Wall -g3 -fsanitize=address && valgrind --leak-check=full --track-origins=yes ./message_queue
+// or, without valgrind:
+// gcc -o message_queue message_queue.c -DMESSAGE_QUEUE_TEST -Wall -g3 && ./message_queue
 
+MSG_BUF create_message(char raw_text, int raw_time) {
+    MSG_BUF new_message = {
+        .mtext = {raw_text}, // let's assume this is unique
+        .m_kdata = {raw_time},
+        .mp_next = NULL
+    };    
 
-int main(void) {
-    message_queue_t q = NULL;
-    assert(is_queue_empty(&q));
-    MSG_BUF m1 = {
-        .mtype = 0,
-        .mtext = {'b'},
-
-        .mp_next = NULL,
-        .m_send_pid = 1,
-        .m_recv_pid = 2,
-        .m_kdata = {1}
-    };
-
-    
+    return new_message;
 }
 
+test_check_message(MSG_BUF* msg, char head_text, int head_time) {
+    assert(msg != NULL);
+
+    printf("\n\nResults:\n");
+    printf("expected time: %d\n", head_time);
+    printf( "actual time: %d\n", msg->m_kdata[0]);
+
+    printf("\nexpected text: %c\n", head_text);
+    printf(    "actual text: %c\n", msg->mtext[0]);
+
+    assert(head_time == msg->m_kdata[0]);
+    assert(head_text == msg->mtext[0]);
+}
+
+void test_check_head(message_queue_t queue, char head_text, int head_time) {
+    assert(!is_queue_empty(&queue));
+
+    MSG_BUF* queue_head = peek_message(&queue);
+    test_check_message(queue_head, head_text, head_time);
+}
+
+void test(message_queue_t queue) {
+    printf("TESTING ENQUEUE");
+    MSG_BUF m1 = create_message('a', 1);
+    enqueue_message(&m1, &queue);
+    test_check_head(queue, 'a', 1);
+
+    MSG_BUF m2 = create_message('b', 4);
+    enqueue_message(&m2, &queue);
+    test_check_head(queue, 'a', 1);
+
+    MSG_BUF m3 = create_message('c', 0);
+    enqueue_message(&m3, &queue);
+    test_check_head(queue, 'c', 0);    
+
+    MSG_BUF m4 = create_message('d', 3);
+    enqueue_message(&m4, &queue);
+    test_check_head(queue, 'c', 0);
+
+    MSG_BUF m5 = create_message('y', 0);
+    enqueue_message(&m5, &queue);
+    test_check_head(queue, 'c', 0);
+
+    assert(!is_queue_empty(&queue));
+
+    printf("TESTING DEQUEUE");
+    MSG_BUF* d1 = dequeue_message(&queue);
+    test_check_message(d1, 'c', 0);
+
+    MSG_BUF* d2 = dequeue_message(&queue);
+    test_check_message(d2, 'y', 0);
+
+    MSG_BUF* d3 = dequeue_message(&queue);
+    test_check_message(d3, 'a', 1);
+
+    MSG_BUF* d4 = dequeue_message(&queue);
+    test_check_message(d4, 'd', 3);
+
+    MSG_BUF* d5 = dequeue_message(&queue);
+    test_check_message(d5, 'b', 4);
+
+    assert(is_queue_empty(&queue));
+}
+
+/*
+void test_dequeue(message_queue_t queue) {
+    MSG_BUF* m1 = dequeue_message(&queue);
+    dequeue_message(&queue);
+    dequeue_message(&queue);
+    assert(!is_queue_empty(&queue));
+    // for (int i = -1; i < m1.m_kdata[0]; i++) {
+        // printf("WEF\n");
+    // }
+    // printf( "actual time: %d\n", m1.m_kdata[0]);
+    // test_check_message(m1, 'c', 0);
+    // free(m1);
+}
+*/
+
+int main(void) {
+    message_queue_t test_queue = NULL;
+    assert(is_queue_empty(&test_queue));
+
+    test(test_queue);
+    // test_dequeue(test_queue); 
+
+    assert(is_queue_empty(&test_queue));
+}
 
 #endif
