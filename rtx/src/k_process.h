@@ -30,6 +30,10 @@ extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */
 extern void set_test_procs(void);      /* test process initial set up */
 
+// recursive IRQ disabling
+void enable_irq(void);
+void disable_irq(void);
+
 // Preempt the current process if needed.
 // Does nothing if already preempted.
 void k_check_preemption(void);

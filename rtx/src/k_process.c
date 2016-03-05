@@ -469,13 +469,13 @@ void check_delayed_messages(void) {
 static int irq_lock_count = 0;
 
 void enable_irq(void) {
-	__enable_irq();
-	++irq_lock_count;
+	assert(irq_lock_count > 0);
+	if (--irq_lock_count == 0) {
+		__enable_irq();
+	}
 }
 
 void disable_irq(void) {
-	assert(irq_lock_count > 0);
-	if (--irq_lock_count == 0) {
-		__disable_irq();
-	}
+	__disable_irq();
+	++irq_lock_count;
 }
