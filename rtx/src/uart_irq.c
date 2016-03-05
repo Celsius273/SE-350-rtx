@@ -13,6 +13,12 @@
 #include "printf.h"
 #endif
 
+#include "k_process.h"
+#include "priority_queue.h"
+#include "k_memory.h"
+#include "list.h"
+
+#define DEBUG_HOTKEYS
 
 uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
@@ -204,14 +210,52 @@ void c_UART0_IRQHandler(void)
 		g_buffer[12] = g_char_in; // nasty hack
 		g_send_char = 1;
 		
-		/* setting the g_switch_flag */
-		if ( g_char_in == 'S' ) {
-			g_switch_flag = 1; 
-		} else {
-			g_switch_flag = 0;
+		
+		#ifdef DEBUG_HOTKEYS
+		switch(g_char_in) {
+			case HOTKEY_READY_QUEUE:
+                uart1_put_string("READY QUEUE:");
+               // Print ready queue content
+                break;
+            
+            case HOTKEY_BLOCKED_MEM_QUEUE:
+                uart1_put_string("MEM BLOCKED QUEUE:");
+						 // Print blocked queue content
+                
+                break;
+            
+            case HOTKEY_BLOCKED_MSG_QUEUE:
+                uart1_put_string("KEY BLOCKED QUEUE:");
+                // Print blocked on receive queue
+                break;
+            
+            default:
+                break;
+    }
+		
+		#endif
+		
+	
+		U8 *message_memory_block = (U8 *)k_request_memory_block();
+		if (message_memory_block == NULL) {
+			printf("Warning: Out of memory. Could not allocate block to send keyboard input to KCD.");
+			return;
 		}
+		
+		MSG_BUF* message = (MSG_BUF*) message_memory_block;
+		printf("UART: Alloc'd block %x for char %c", message, g_char_in);
+		message->mtype = KCD_KEYBOARD_INPUT;
+		message->mtext[0] = g_char_in;
+		message->mtext[1] = '\0';
+		
+		k_send_message(PID_KCD, message);
+		
+		return;
+		
+		
 	} else if (IIR_IntId & IIR_THRE) {
-	/* THRE Interrupt, transmit holding register becomes empty */
+		/* THRE Interrupt, transmit holding register becomes empty */
+		/* This means we want to print something */
 
 		if (*gp_buffer != '\0' ) {
 			g_char_out = *gp_buffer;
