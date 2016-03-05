@@ -1,3 +1,4 @@
+
 /**
  * @brief: uart_irq.c 
  * @author: NXP Semiconductors
@@ -9,22 +10,19 @@
 #include "uart.h"
 #include "k_rtx.h"
 #include "uart_polling.h"
+#include "k_memory.h"
+#include "k_process.h"
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
-
-#include "k_process.h"
-#include "priority_queue.h"
-#include "k_memory.h"
-#include "list.h"
-
-#define DEBUG_HOTKEYS
+#include "allow_k.h"
 
 uint8_t g_buffer[]= "You Typed a Q\n\r";
 uint8_t *gp_buffer = g_buffer;
 uint8_t g_send_char = 0;
 uint8_t g_char_in;
 uint8_t g_char_out;
+
 
 extern uint32_t g_switch_flag;
 

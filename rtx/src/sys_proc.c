@@ -15,13 +15,13 @@ typedef struct mem_t{
 } mem_t;
 #else
 #include "rtx.h"
-#include "usr_clock.h"
+#include "sys_proc.h"
 #include "printf.h"
 #endif
 #include "common.h"
 
 // Wall clock display
-// Test: g++ -o usr_clock usr_clock.c -DUSR_CLOCK_TEST -Wall -g3 && ./usr_clock
+// Test: g++ -o sys_proc sys_proc.c -DUSR_CLOCK_TEST -Wall -g3 && ./sys_proc
 
 #ifdef USR_CLOCK_TEST
 

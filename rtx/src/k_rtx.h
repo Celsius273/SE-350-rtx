@@ -10,6 +10,8 @@
 #ifndef K_RTX_H_
 #define K_RTX_H_
 
+#include "allow_k.h"
+
 /*----- Definitations -----*/
 
 #define RTX_ERR -1
@@ -39,5 +41,7 @@ typedef struct pcb
 	PROC_STATE_E m_state;   /* state of the process */
 	int m_priority;         /* current priority */
 } PCB;
+
+#include "disallow_k.h"
 
 #endif // ! K_RTX_H_

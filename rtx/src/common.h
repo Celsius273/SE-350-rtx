@@ -39,15 +39,18 @@
 #define PID_CRT          13
 #define PID_TIMER_IPROC  14
 #define PID_UART_IPROC   15
+#define MAX_PID 15
 
 
 /* Process Priority. The bigger the number is, the lower the priority is*/
+#define HIGHEST 0
 #define HIGH    0
 #define MEDIUM  1
 #define LOW     2
 #define LOWEST  3
 #define NULL_PRIO 4
-#define NUM_PRIORITIES 5
+#define IPROC_PRIO 5
+#define NUM_PRIORITIES 6
 
 /* Defining the Hot Keys for debug information */
 

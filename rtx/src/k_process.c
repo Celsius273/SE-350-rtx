@@ -18,7 +18,10 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_process.h"
+#include "sys_proc.h"
 #include "list.h"
+#include "kcd.h"
+#include "crt.h"
 // for NULL_PRIO
 #include "rtx.h"
 #include <assert.h>
@@ -31,10 +34,10 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
-#define STATIC
+#include "allow_k.h"
 
 /* ----- Global Variables ----- */
-STATIC PCB process[NUM_PROCS];   /* array of processes */
+static PCB process[NUM_PROCS];   /* array of processes */
 const static pid_t PID_NONE = -1;
 static pid_t running = PID_NONE; /* always point to the current RUN process */
 
@@ -51,16 +54,56 @@ LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
 
 /* delayed queue for messages */
-STATIC message_queue_t g_delayed_msg_queue = NULL;
+static message_queue_t g_delayed_msg_queue = NULL;
 
-
-/* process initialization table */
-PROC_INIT g_proc_table[NUM_PROCS];
-extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 static void infinite_loop(void)
 {
 	for (;;) {
+	}
+}
+
+/* process initialization table */
+const static PROC_INIT g_proc_table[] = {
+	// m_pid           m_priority      m_stack_size  mpf_start_pc
+	{PID_NULL,         NULL_PRIO,      0x100,        &infinite_loop},
+	{PID_CLOCK,        HIGHEST,        0x100,        &proc_clock},
+	{PID_KCD,          HIGHEST,        0x100,        &proc_kcd},
+	{PID_CRT,          HIGHEST,      	 0x100,        &proc_crt},
+	// TODO add these
+	{PID_TIMER_IPROC,  IPROC_PRIO,     0x100,        &infinite_loop},
+	{PID_UART_IPROC,   IPROC_PRIO,     0x100,        &infinite_loop},
+};
+extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
+
+
+static void initialize_processes(const PROC_INIT *const inits, int num) {
+	/* initilize exception stack frame (i.e. initial context) for each process */
+	for ( int i = 0; i < num; i++ ) {
+		int j;
+		const PROC_INIT *const init = &inits[i];
+		int pid = init->m_pid;
+		// Check to make sure we're not overwriting a process
+		assert(pid < NUM_PROCS);
+		assert(init->m_stack_size);
+		assert(!process[pid].mp_sp);
+		process[pid].m_pid = pid;
+		process[pid].m_state = NEW;
+		process[pid].m_priority = init->m_priority;
+	
+		// Push processes onto ready queue
+		push_process(g_ready_queue, pid, process[pid].m_priority);
+	
+		// Initializing stack pointer for each pcb
+		U32 *sp = alloc_stack(init->m_stack_size);
+		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR
+		*(--sp)  = (U32)(init->mpf_start_pc); // PC contains the entry point of the process
+		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
+			*(--sp) = 0x0;
+		}
+	
+		assert(sp);
+		process[pid].mp_sp = sp;
 	}
 }
 
@@ -70,47 +113,19 @@ static void infinite_loop(void)
  */
 void process_init()
 {
-	int i;
-	U32 *sp;
-
-  /* fill out the initialization table */
+  /* fill out the test initialization table */
 	set_test_procs();
-	int num_procs = 0;
 
-	// This is for the null process
-	g_proc_table[num_procs++] = (PROC_INIT) {
-		.m_pid = PID_NULL,
-		.m_priority = NULL_PRIO,
-		.m_stack_size = 0x100,
-		.mpf_start_pc = &infinite_loop,
-	};
-
-	// Setup initialization for all user processes
-	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_proc_table[num_procs++] = g_test_procs[i];
-	}
-
-	assert(NUM_PROCS == num_procs);
-
-	/* initilize exception stack frame (i.e. initial context) for each process */
-	for ( i = 0; i < NUM_PROCS; i++ ) {
-		int j;
-		process[i].m_pid = (g_proc_table[i]).m_pid;
-		process[i].m_state = NEW;
-		process[i].m_priority = (g_proc_table[i]).m_priority;
-
-		// Push processes onto ready queue
-		push_process(g_ready_queue, process[i].m_pid, process[i].m_priority);
-
-		// Initializing stack pointer for each pcb
-		sp = alloc_stack((g_proc_table[i]).m_stack_size);
-		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR
-		*(--sp)  = (U32)((g_proc_table[i]).mpf_start_pc); // PC contains the entry point of the process
-		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
-			*(--sp) = 0x0;
+	// Make sure we have the right number of non-test processes
+	// Fix this in k_process.h
+	initialize_processes(g_proc_table, sizeof(g_proc_table) / sizeof(g_proc_table[0]));
+	initialize_processes(g_test_procs, NUM_TEST_PROCS);
+	// Make sure we got all the PIDs, or fill them with null
+	for (int i = 0; i < NUM_PROCS; ++i) {
+		if (!process[i].mp_sp) {
+			process[i] = process[PID_NULL];
+			process[i].m_pid = i;
 		}
-
-		process[i].mp_sp = sp;
 	}
 }
 
@@ -289,6 +304,7 @@ static void k_check_preemption_impl(bool is_eager) {
 
 	if(ready != PID_NONE) {
 		// We know this won't wrap
+		assert(running != PID_NONE);
 		const int delta = process[running].m_priority - (int) process[ready].m_priority;
 		if (is_eager ? delta >= 0 : delta > 0){
     	k_release_processor();

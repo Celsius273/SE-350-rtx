@@ -12,6 +12,8 @@
 #include "k_process.h"
 #include "timer.h"
 
+#include "allow_k.h"
+
 void k_rtx_init(void)
 {
 	disable_irq();

@@ -13,11 +13,13 @@
 #include "common.h"
 #include "k_rtx.h"
 
+#include "allow_k.h"
+
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
 
-#define NUM_PROCS (NUM_TEST_PROCS + 1)
+#define NUM_PROCS (MAX_PID + 1)
 
 typedef int pid_t;
 
@@ -55,4 +57,5 @@ void *k_receive_message(int *sender_id);
 
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay);
 
+#include "disallow_k.h"
 #endif /* ! K_PROCESS_H_ */

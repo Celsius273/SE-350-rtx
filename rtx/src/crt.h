@@ -7,6 +7,7 @@
 #include "common.h"
 #include "printf.h"
 #include "k_memory.h"
+#include "rtx.h"
 
 void proc_crt(void);
 
