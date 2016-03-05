@@ -36,17 +36,18 @@ static pid_t current = -1; /* always point to the current RUN process */
 
 // Array of blocked PIDs
 LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
-/* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
-LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
-/* array of list of processes that are in READY state, one for each priority */
-LL_DECLARE(g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
+/* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
+#define g_blocked_on_resource_queue (blocked[BLOCKED_ON_RESOURCE])
+
+/* array of list of processes that are in RDY state, one for each priority */
+#define g_ready_queue (blocked[RDY])
 
 /* array of list of processes that are in BLOCKED_ON_RECEIVE state, one for each priority */
-LL_DECLARE(g_blocked_on_receive_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
+#define g_blocked_on_receive_queue (blocked[BLOCKED_ON_RECEIVE])
 
 /* array of message queues (mailbox) for each processes */
-LL_DECLARE (g_message_queues[NUM_PROCS], MSG_BUF*, 30);
+LL_DECLARE(g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
 
 /* delayed queue for messages */
 MSG_BUF* g_delayed_msg_queue = NULL;
@@ -113,13 +114,10 @@ void process_init()
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
- *@return: PCB pointer of the next to run process
- *         NULL if error happens
- *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
- *      No other effect on other global variables.
+ *POST: 0 <= pid && pid < NUM_PROCS
  */
 
-PCB *scheduler(void)
+pid_t scheduler(void)
 {
 		int peek_priority = NUM_PRIORITIES;
 		int peek_pid = peek_front(g_ready_queue);
