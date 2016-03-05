@@ -173,15 +173,7 @@ void proc1(void)
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
 	// the processor). The invoking process remains ready to execute and is put at the end of the
 	// ready queue of the same priority. Another process may possibly be selected for execution.
-	test_transition(test_state, "FIFO scheduling");
-	assert(proc2_work_remaining == 3);
-	for (int i = 2; i >= 0; --i) {
-		TEST_EXPECT(0, test_release_processor());
-		TEST_EXPECT(i, proc2_work_remaining);
-		TEST_EXPECT(i, proc3_work_remaining);
-	}
-
-	test_transition("FIFO scheduling", "Equal priority memory blocking");
+	test_transition(test_state, "Equal priority memory blocking");
 	while (test_state == "Equal priority memory blocking") {
 		test_mem_request();
 	}
@@ -312,11 +304,6 @@ static void test_receive_42_from_proc1(void)
 void proc2(void)
 {
 	printf("Started %s\n", __FUNCTION__);
-	while (proc2_work_remaining > 0) {
-		TEST_EXPECT(proc3_work_remaining, proc2_work_remaining);
-		--proc2_work_remaining;
-		TEST_EXPECT(0, test_release_processor());
-	}
 
 	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
 	// Let's free enough memory
@@ -374,11 +361,6 @@ void proc2(void)
 void proc3(void)
 {
 	printf("Started %s\n", __FUNCTION__);
-	while (proc3_work_remaining > 0) {
-		--proc3_work_remaining;
-		TEST_EXPECT(proc2_work_remaining, proc3_work_remaining);
-		TEST_EXPECT(0, test_release_processor());
-	}
 
 	// Since proc1 was preempted, it's at the back of the ready queue
 	// Let's run it.
