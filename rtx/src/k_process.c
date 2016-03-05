@@ -31,8 +31,10 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
+#define STATIC
+
 /* ----- Global Variables ----- */
-PCB process[NUM_PROCS];   /* array of processes */
+STATIC PCB process[NUM_PROCS];   /* array of processes */
 const static pid_t PID_NONE = -1;
 static pid_t running = PID_NONE; /* always point to the current RUN process */
 
@@ -49,7 +51,7 @@ LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
 
 /* delayed queue for messages */
-static message_queue_t g_delayed_msg_queue = NULL;
+STATIC message_queue_t g_delayed_msg_queue = NULL;
 
 
 /* process initialization table */
@@ -332,12 +334,13 @@ static int k_enqueue_ready_process(pid_t receiver_pid)
     return RTX_OK;
 }
 
+/**
+ * Send a message. Must have IRQ lock.
+ */
 static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 {
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
-    
-	  __disable_irq();
 	
     p_msg_envelope = (MSG_BUF *)((U8 *)p_msg);
     p_msg_envelope->m_send_pid = sender_pid;
@@ -351,9 +354,7 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
         p_receiver_pcb->m_state = RDY;
         k_enqueue_ready_process(receiver_pid);
-    } 
-		
-		__enable_irq();
+    }
 }
 
 static bool validate_message(int receiver_pid, void *p_msg_env) {
@@ -453,7 +454,11 @@ int k_delayed_send(int receiver_id, void *p_msg_env, int delay) {
 
 void check_delayed_messages(void) {
 	__disable_irq();
-	for (MSG_BUF *msg; msg = dequeue_message(&g_delayed_msg_queue);) {
+	for (;;) {
+		MSG_BUF *const msg = dequeue_message(&g_delayed_msg_queue);
+		if (!msg) {
+			break;
+		}
 		k_send_message_helper(msg->m_send_pid, msg->m_recv_pid, msg);
 	}
 	__enable_irq();
