@@ -21,6 +21,7 @@
 #include "sys_proc.h"
 #include "list.h"
 #include "kcd.h"
+#include "crt.h"
 // for NULL_PRIO
 #include "rtx.h"
 #include <assert.h>
@@ -68,10 +69,10 @@ const static PROC_INIT g_proc_table[] = {
 	{PID_NULL,         NULL_PRIO,      0x100,        &infinite_loop},
 	{PID_CLOCK,        HIGHEST,        0x100,        &proc_clock},
 	{PID_KCD,          HIGHEST,        0x100,        &proc_kcd},
+	{PID_CRT,          HIGHEST,      	 0x100,        &proc_crt},
 	// TODO add these
-	{PID_CRT,          NULL_PRIO,      0x100,        &infinite_loop},
-	{PID_TIMER_IPROC,  NULL_PRIO,      0x100,        &infinite_loop},
-	{PID_UART_IPROC,   NULL_PRIO,      0x100,        &infinite_loop},
+	{PID_TIMER_IPROC,  IPROC_PRIO,     0x100,        &infinite_loop},
+	{PID_UART_IPROC,   IPROC_PRIO,     0x100,        &infinite_loop},
 };
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 

@@ -481,6 +481,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\message_queue.c</FilePath>
             </File>
+            <File>
+              <FileName>crt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\crt.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
