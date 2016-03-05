@@ -14,13 +14,13 @@
 
 void k_rtx_init(void)
 {
-	__disable_irq();
+	disable_irq();
 	uart_irq_init(0);   // uart0, interrupt-driven 
 	uart1_init();       // uart1, polling
 	timer_init(0);
 	memory_init();
 	process_init();
-	__enable_irq();
+	enable_irq();
 	
 	uart0_put_string("RTX is starting\n\r");
 	/* start the first process */

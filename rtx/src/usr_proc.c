@@ -80,13 +80,13 @@ void set_test_procs() {
 }
 
 static bool compare_and_swap(const char *volatile *const ref, const char *const from, const char *const to) {
-	__disable_irq();
+	disable_irq();
 	if (*ref == from) {
 		*ref = to;
-		__enable_irq();
+		enable_irq();
 		return true;
 	}
-	__enable_irq();
+	enable_irq();
 	return false;
 }
 

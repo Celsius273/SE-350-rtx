@@ -375,10 +375,10 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 		return RTX_ERR;
 	}
 
-	__disable_irq();
+	disable_irq();
 	k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env);
 		//if the receiving process is of higher priority, preemption might happen
-	__enable_irq();
+	enable_irq();
 
 	k_check_preemption();
 	
@@ -389,18 +389,18 @@ void *k_receive_message(int *p_sender_pid)
 {
 	MSG_BUF *p_msg = NULL;
 	
-	__disable_irq();
+	disable_irq();
 	while (LL_SIZE(g_message_queues[process[running].m_pid]) == 0) {
-		__enable_irq();
+		enable_irq();
 		k_poll(BLOCKED_ON_RECEIVE);
-	__disable_irq();
+	disable_irq();
 		assert(LL_SIZE(g_message_queues[process[running].m_pid]) > 0);
 	}
 	
 	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[process[running].m_pid]);
 	
 	if (p_msg == NULL) {
-		__enable_irq();
+		enable_irq();
 		
 			return NULL;
 	}
@@ -410,21 +410,21 @@ void *k_receive_message(int *p_sender_pid)
 		*p_sender_pid = p_msg->m_send_pid;
 	}
 	
-	__enable_irq();
+	enable_irq();
 	
 	return (void *)((U8 *)p_msg);
 }
 
 void *k_non_blocking_receive_message(int pid)
 {
-		__disable_irq();
+		disable_irq();
 
     if (!(LL_SIZE(g_message_queues[pid]) == 0)) {
         MSG_BUF *p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[pid]);
-        __enable_irq();
+        enable_irq();
 				return (void *)((U8 *)p_msg);
     } else {
-				__enable_irq();
+				enable_irq();
         return NULL;
     }
 }
@@ -453,7 +453,7 @@ int k_delayed_send(int receiver_id, void *p_msg_env, int delay) {
 }
 
 void check_delayed_messages(void) {
-	__disable_irq();
+	disable_irq();
 	for (;;) {
 		MSG_BUF *const msg = dequeue_message(&g_delayed_msg_queue);
 		if (!msg) {
@@ -461,5 +461,21 @@ void check_delayed_messages(void) {
 		}
 		k_send_message_helper(msg->m_send_pid, msg->m_recv_pid, msg);
 	}
+	enable_irq();
+}
+
+// Allow recursive IRQ disable
+
+static int irq_lock_count = 0;
+
+void enable_irq(void) {
 	__enable_irq();
+	++irq_lock_count;
+}
+
+void disable_irq(void) {
+	assert(irq_lock_count > 0);
+	if (--irq_lock_count == 0) {
+		__disable_irq();
+	}
 }
