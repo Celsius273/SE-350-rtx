@@ -58,14 +58,6 @@ void memory_init(void)
 	/* 4 bytes padding */
 	p_end += 4;
 
-	/* allocate memory for pcb pointers   */
-	gp_pcbs = (PCB **)p_end;
-	p_end += NUM_PROCS * sizeof(PCB *);
-	for ( i = 0; i < NUM_PROCS; i++ ) {
-		gp_pcbs[i] = (PCB *)p_end;
-		p_end += sizeof(PCB);
-	}
-
 	/* prepare for alloc_stack() to allocate memory for stacks */
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */

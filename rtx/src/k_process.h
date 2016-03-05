@@ -32,6 +32,8 @@ extern void set_test_procs(void);      /* test process initial set up */
 // Preempt the current process if needed.
 // Does nothing if already preempted.
 void k_check_preemption(void);
+// Suspend the process until an event is triggered.
+void k_poll(PROC_STATE_E which);
 
 // System calls
 int k_set_process_priority(int process_id, int priority);

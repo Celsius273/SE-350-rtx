@@ -18,8 +18,6 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_process.h"
-// FIXME are awe allowed to refer to user code from kernel?
-#include "usr_proc.h"
 #include "list.h"
 // for NULL_PRIO
 #include "rtx.h"
@@ -33,9 +31,11 @@
 #endif /* DEBUG_0 */
 
 /* ----- Global Variables ----- */
-PCB **gp_pcbs;   /* array of pcbs pointers */
-PCB *gp_current_process = NULL; /* always point to the current RUN process */
+PCB process[NUM_PROCS];   /* array of processes */
+static pid_t current = -1; /* always point to the current RUN process */
 
+// Array of blocked PIDs
+LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 /* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
 LL_DECLARE(g_blocked_on_resource_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
@@ -93,12 +93,12 @@ void process_init()
 	/* initilize exception stack frame (i.e. initial context) for each process */
 	for ( i = 0; i < NUM_PROCS; i++ ) {
 		int j;
-		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
-		(gp_pcbs[i])->m_state = NEW;
-		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
+		process[i].m_pid = (g_proc_table[i]).m_pid;
+		process[i].m_state = NEW;
+		process[i].m_priority = (g_proc_table[i]).m_priority;
 
 		// Push processes onto ready queue
-		push_process(g_ready_queue, gp_pcbs[i]->m_pid, gp_pcbs[i]->m_priority);
+		push_process(g_ready_queue, process[i].m_pid, process[i].m_priority);
 
 		// Initializing stack pointer for each pcb
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
@@ -108,7 +108,7 @@ void process_init()
 			*(--sp) = 0x0;
 		}
 
-		(gp_pcbs[i])->mp_sp = sp;
+		process[i].mp_sp = sp;
 	}
 }
 
@@ -124,7 +124,7 @@ PCB *scheduler(void)
 		int peek_priority = NUM_PRIORITIES;
 		int peek_pid = peek_front(g_ready_queue);
 		if (peek_pid != -1) {
-				peek_priority = gp_pcbs[peek_pid]->m_priority;
+				peek_priority = process[peek_pid].m_priority;
 		}
 	
 	  if(NULL != gp_current_process && peek_priority > gp_current_process->m_priority && gp_current_process->m_state != BLOCKED_ON_RESOURCE) {
@@ -305,7 +305,7 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	__disable_irq();
 	if (k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env) == 1) {
 		//if the receiving process is of higher priority, preemption might happen
-		if (gp_pcbs[receiver_pid]->m_priority <= gp_current_process->m_priority) {
+		if (process[receiver_pid].m_priority <= gp_current_process->m_priority) {
 			int ret = k_release_processor();
 			__enable_irq();
 			return ret;
