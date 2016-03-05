@@ -34,7 +34,7 @@ all that's left is parsing the string
 %W 
 
 */
-void proc_kcd() {
+void proc_kcd(void) {
 	//init_kcd_process();
 	int sender_id;
 	while (1) {
@@ -48,8 +48,13 @@ void proc_kcd() {
 
 		if (message->mtype == KCD_REG) {
 			kcd_process_command_registration(message);
+			continue; // don't free the block
 		} else if (message->mtype == DEFAULT) {
-			kcd_process_keyboard_input(message);
+			if (sender_id == PID_UART_IPROC) {
+				kcd_process_keyboard_input(message);
+			} else {
+				uart1_put_string("ERROR: Got keyboard input from non-uart\n");
+			}
 		} else {
 			uart1_put_string("ERROR: The KCD received a message that was not of type command registration or keyboard input!\n");
 		}

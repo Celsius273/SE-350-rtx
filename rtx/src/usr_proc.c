@@ -198,7 +198,7 @@ void proc1(void)
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P1));
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P2));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
-	TEST_EXPECT(RTX_ERR, test_get_process_priority(NUM_TEST_PROCS + 1));
+	TEST_EXPECT(RTX_ERR, test_get_process_priority(MAX_PID + 1));
 	TEST_EXPECT(4, test_get_process_priority(PID_NULL));
 
 	test_transition("Get priority", "Set null priority");
