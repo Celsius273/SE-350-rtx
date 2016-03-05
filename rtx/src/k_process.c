@@ -289,6 +289,7 @@ static void k_check_preemption_impl(bool is_eager) {
 
 	if(ready != PID_NONE) {
 		// We know this won't wrap
+		assert(running != PID_NONE);
 		const int delta = process[running].m_priority - (int) process[ready].m_priority;
 		if (is_eager ? delta >= 0 : delta > 0){
     	k_release_processor();
@@ -301,7 +302,11 @@ void k_check_preemption(void) {
 }
 
 void k_check_preemption_eager(void) {
-	k_check_preemption_impl(true);
+	static int millis = 0;
+	millis = (millis + 1) % 100;
+	if (millis == 0) {
+		k_check_preemption_impl(true);
+	}
 }
 
 void k_poll(PROC_STATE_E which) {
