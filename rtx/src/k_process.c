@@ -278,9 +278,32 @@ void k_check_preemption(void) {
 
 void k_poll(PROC_STATE_E which) {
 	assert(running != -1);
-	// TODO support other values
-	assert(which == BLOCKED_ON_RESOURCE);
-	process[running].m_state = which;
+	PCB *const p_pcb = &process[running];
+	p_pcb->m_state = which;
+	switch (which) {
+		case RDY:
+			assert(false); // TODO support this
+			break;
+		case BLOCKED_ON_RESOURCE:
+			// Hacked in k_release_processor
+			break;
+		case BLOCKED_ON_RECEIVE:
+			{
+				void *p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
+
+				//don't re-add the process if it has already been added to the queue
+				if (!(
+							!is_pid_queue_empty(p_blocked_on_receive_queue)
+							&& queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)
+					 )) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
+					/* put process in the blocked-on-receive-queue */
+					push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
+				}
+			}
+			break;
+		default:
+			assert(false);
+	}
 	k_release_processor();
 }
 
@@ -348,34 +371,13 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	return RTX_ERR;
 }
 
-void k_enqueue_blocked_on_receive_process(void)
-{		//running corresponds to the receiver pcb
-    if (running == -1) {
-        return;
-    }
-    
-	PCB *p_pcb = &process[running];
-    p_pcb->m_state = BLOCKED_ON_RECEIVE;
-
-    void *p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
-    
-    if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
-        //don't re-add the process if it has already been added to the queue
-        return;
-    }
-    
-    /* put process in the blocked-on-receive-queue */
-    push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
-}
-
 void *k_receive_message(int *p_sender_pid)
 {
 	MSG_BUF *p_msg = NULL;
 	
 	__disable_irq();
 	while (LL_SIZE(g_message_queues[process[running].m_pid]) == 0) {
-			k_enqueue_blocked_on_receive_process();
-			k_release_processor();
+		k_poll(BLOCKED_ON_RECEIVE);
 	}
 	
 	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[process[running].m_pid]);		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
