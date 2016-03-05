@@ -191,13 +191,13 @@ void proc1(void)
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P2));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(NUM_TEST_PROCS + 1));
-	TEST_EXPECT(4, test_get_process_priority(NULL_PID));
+	TEST_EXPECT(4, test_get_process_priority(PID_NULL));
 
 	test_transition("Get priority", "Set null priority");
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(NULL_PID, -1));
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(NULL_PID, 0));
-	TEST_EXPECT(RTX_ERR, test_set_process_priority(NULL_PID, 3));
-	TEST_EXPECT(0, test_set_process_priority(NULL_PID, 4));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_NULL, -1));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_NULL, 0));
+	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_NULL, 3));
+	TEST_EXPECT(0, test_set_process_priority(PID_NULL, 4));
 
 	test_transition("Set null priority", "Set user priority (no-op)");
 	TEST_EXPECT(RTX_ERR, test_set_process_priority(PID_P1, -1));

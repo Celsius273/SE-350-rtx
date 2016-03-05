@@ -7,6 +7,7 @@
 
 #include <LPC17xx.h>
 #include "uart.h"
+#include "k_rtx.h"
 #include "uart_polling.h"
 #ifdef DEBUG_0
 #include "printf.h"

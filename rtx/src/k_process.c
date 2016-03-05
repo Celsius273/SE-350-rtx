@@ -32,7 +32,7 @@
 
 /* ----- Global Variables ----- */
 PCB process[NUM_PROCS];   /* array of processes */
-static pid_t current = -1; /* always point to the current RUN process */
+static pid_t running = -1; /* always point to the current RUN process */
 
 // Array of blocked PIDs
 LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
@@ -47,10 +47,10 @@ LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 #define g_blocked_on_receive_queue (blocked[BLOCKED_ON_RECEIVE])
 
 /* array of message queues (mailbox) for each processes */
-LL_DECLARE(g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
+LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
 
 /* delayed queue for messages */
-MSG_BUF* g_delayed_msg_queue = NULL;
+static message_queue_t g_delayed_msg_queue = NULL;
 
 
 /* process initialization table */
@@ -78,7 +78,7 @@ void process_init()
 
 	// This is for the null process
 	g_proc_table[num_procs++] = (PROC_INIT) {
-		.m_pid = NULL_PID,
+		.m_pid = PID_NULL,
 		.m_priority = NULL_PRIO,
 		.m_stack_size = 0x100,
 		.mpf_start_pc = &infinite_loop,
@@ -114,64 +114,62 @@ void process_init()
 }
 
 /*@brief: scheduler, pick the pid of the next to run process
- *POST: 0 <= pid && pid < NUM_PROCS
+ *POST: 0 <= running && running < NUM_PROCS
  */
 
-pid_t scheduler(void)
+static void scheduler(void)
 {
 		int peek_priority = NUM_PRIORITIES;
 		int peek_pid = peek_front(g_ready_queue);
 		if (peek_pid != -1) {
-				peek_priority = process[peek_pid].m_priority;
+			peek_priority = process[peek_pid].m_priority;
 		}
 	
-	  if(NULL != gp_current_process && peek_priority > gp_current_process->m_priority && gp_current_process->m_state != BLOCKED_ON_RESOURCE) {
-			return gp_current_process;
+		if(running != -1 && peek_priority > process[running].m_priority && process[running].m_state != BLOCKED_ON_RESOURCE) {
+			return;
 		}
 		
 		int pid = pop_first_process(g_ready_queue);
 		
 		if(pid == -1) {
-			return gp_pcbs[NULL_PID];
+			running = PID_NULL;
+			return;
 		}
 
-		return gp_pcbs[pid];
+		running = pid;
 }
 
-/*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
- *@param: p_pcb_old, the old pcb that was in RUN
+/*@brief: switch out old process (old_pid), run the new pcb (running)
+ *@param: old_pid, the pid of the old process that was in RUN
  *@return: RTX_OK upon success
  *         RTX_ERR upon failure
- *PRE:  p_pcb_old and gp_current_process are pointing to valid PCBs.
- *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
- *      No other effect on other global variables.
+ *PRE:  old_pid and running are valid pids.
  */
-int process_switch(PCB *p_pcb_old)
+static int process_switch(pid_t old_pid)
 {
-	PROC_STATE_E state;
-
-	state = gp_current_process->m_state;
+	const PROC_STATE_E state = process[running].m_state;
+	PCB *const p_pcb_old = &process[old_pid];
 
 	if (state == NEW) {
-		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {
+		if (running != old_pid && p_pcb_old->m_state != NEW) {
 			p_pcb_old->m_state = RDY;
 			p_pcb_old->mp_sp = (U32 *) __get_MSP();
 		}
-		gp_current_process->m_state = RUN;
-		__set_MSP((U32) gp_current_process->mp_sp);
+		process[running].m_state = RUN;
+		__set_MSP((U32) process[running].mp_sp);
 		__rte();  // pop exception stack frame from the stack for a new processes
 	}
 
 	/* The following will only execute if the if block above is FALSE */
 
-	if (gp_current_process != p_pcb_old) {
+	if (running != old_pid) {
 		if (state == RDY){
 			p_pcb_old->m_state = RDY;
 			p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
-			gp_current_process->m_state = RUN;
-			__set_MSP((U32) gp_current_process->mp_sp); //switch to the new proc's stack
+			process[running].m_state = RUN;
+			__set_MSP((U32) process[running].mp_sp); //switch to the new proc's stack
 		} else {
-			gp_current_process = p_pcb_old; // revert back to the old proc on error
+			running = old_pid; // revert back to the old proc on error
 			return RTX_ERR;
 		}
 	}
@@ -181,16 +179,15 @@ int process_switch(PCB *p_pcb_old)
 /**
  * @brief release_processor().
  * @return RTX_ERR on error and zero on success
- * POST: gp_current_process gets updated to next to run process
+ * POST: running gets updated to next to run process
  */
 int k_release_processor(void)
 {
-	PCB *p_pcb_old = NULL;
+	pid_t old_pid = running;
+	PCB *const p_pcb_old = &process[old_pid];
+	scheduler();
 
-	p_pcb_old = gp_current_process;
-	gp_current_process = scheduler();
-
-	if (gp_current_process == p_pcb_old) {
+	if (running == old_pid) {
 		return RTX_OK;
 	}
 	/*
@@ -212,25 +209,15 @@ int k_release_processor(void)
 		push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
 	}
 
-	process_switch(p_pcb_old);
+	process_switch(old_pid);
 
 	return RTX_OK;
-}
-
-PCB* k_peek_ready_process_front(void)
-{
-	int pid = peek_front(g_ready_queue);
-
-	if(pid == -1) {
-		return NULL;
-	}
-	return gp_pcbs[pid];
 }
 
 int k_set_process_priority(int process_id, int priority) {
 	// TODO check if this is correct, according to the spec.
 	// "The priority of the null process may not be changed from level 4"
-	if (process_id == NULL_PID && priority == NULL_PRIO) {
+	if (process_id == PID_NULL && priority == NULL_PRIO) {
 		return RTX_OK;
 	}
 	// Check for invalid values
@@ -260,7 +247,7 @@ int k_set_process_priority(int process_id, int priority) {
 int k_get_process_priority(int process_id) {
 
 	// Check for invalid pid values
-	if(process_id < NULL_PID || process_id >= NUM_PROCS) {
+	if(process_id < PID_NULL || process_id >= NUM_PROCS) {
 		return RTX_ERR;
 	}
 
@@ -282,9 +269,9 @@ void k_check_preemption(void) {
 		}
 	}
 
-	PCB *p_ready_pcb = k_peek_ready_process_front();
+	pid_t ready = peek_front(g_ready_queue);
 
-	if(gp_current_process->m_priority > p_ready_pcb->m_priority){
+	if(ready != -1 && process[running].m_priority > process[ready].m_priority){
     	k_release_processor();
     }
 }
@@ -301,9 +288,9 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	}
   
 	__disable_irq();
-	if (k_send_message_helper(gp_current_process->m_pid, receiver_pid, p_msg_env) == 1) {
+	if (k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env) == 1) {
 		//if the receiving process is of higher priority, preemption might happen
-		if (process[receiver_pid].m_priority <= gp_current_process->m_priority) {
+		if (process[receiver_pid].m_priority <= process[running].m_priority) {
 			int ret = k_release_processor();
 			__enable_irq();
 			return ret;
@@ -346,12 +333,12 @@ void *k_receive_message(int *p_sender_pid)
 	MSG_BUF *p_msg = NULL;
 	
 	__disable_irq();
-	while (LL_SIZE(g_message_queues[gp_current_process->m_pid]) == 0) {
+	while (LL_SIZE(g_message_queues[process[running].m_pid]) == 0) {
 			k_enqueue_blocked_on_receive_process(gp_current_process);
 			k_release_processor();
 	}
 	
-	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[gp_current_process->m_pid]);		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
+	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[process[running].m_pid]);		//Kelvin: Add dequeue_message(void* pq) to your priority queue API somehow
 	
 	if (p_msg == NULL) {
 		__enable_irq();
@@ -415,7 +402,7 @@ int k_enqueue_ready_process(PCB *p_pcb)
 
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
 {
-	if(sender_pid < NULL_PID || sender_pid >= NUM_PROCS || delay < 0) {
+	if(sender_pid < PID_NULL || sender_pid >= NUM_PROCS || delay < 0) {
 		return RTX_ERR;
 	}
 	
@@ -429,7 +416,7 @@ int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
     
     p_msg_envelope = (MSG_BUF *)((U8 *)p_msg_env - MSG_HEADER_OFFSET); // Requesting without adding?? 
     p_msg_envelope->m_send_pid = sender_pid;
-    p_msg_envelope->m_recv_pid = gp_current_process->m_pid; */
+    p_msg_envelope->m_recv_pid = process[running].m_pid; */
 	
 	//p_msg_envelope->m_expiry = delay + g_timer_count;
 	
