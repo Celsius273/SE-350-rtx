@@ -79,27 +79,39 @@ void set_test_procs() {
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
 {
+	disable_irq();
 	// Silently allow for non-FIFO ordering
 	const char *const initial_test_state = test_state;
-	for (int i = 0; i < NUM_PROCS && test_state != from; ++i) {
+	const char *prev_test_state = test_state;
+	int tries = 0;
+	for (int i = 0; i < NUM_PROCS * 2 && test_state != from; ++i) {
+		enable_irq();
+		++tries;
 		release_processor();
+		disable_irq();
+		if (prev_test_state != test_state) {
+			prev_test_state = test_state;
+			i = 0;
+		}
 	}
 #ifdef DEBUG_0
 	if (from != test_state) {
 		printf(
-			"test_transition(%s, %s) expected state %s, but got %s (%s after %d tries)\n",
+			"test_transition(%s, %s)\n  expected state %s, but\n  got %s (%s after %d tries)\n",
 			from,
 			to,
 			from,
 			initial_test_state,
 			test_state,
-			NUM_TEST_PROCS
+			tries
 		);
+		assert(0);
 	}
 #endif
 	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
 	printf("Done: %s, starting: %s at %s:%d\n", test_state, to, __FILE__, lineno);
 	test_state = to;
+	enable_irq();
 }
 #define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
 
@@ -160,6 +172,7 @@ static int test_get_process_priority(int pid) {
 #define PID_P4 4
 #define PID_P5 5
 #define PID_P6 6
+#define MIN_MEM_BLOCKS 5
 
 /**
  * @brief: a process that tests the RTX API
@@ -174,7 +187,9 @@ void proc1(void)
 	// the processor). The invoking process remains ready to execute and is put at the end of the
 	// ready queue of the same priority. Another process may possibly be selected for execution.
 	test_transition(test_state, "Equal priority memory blocking");
-	while (test_state == "Equal priority memory blocking") {
+	// Due to preemption, we can't tell whether we're blocked.
+	// Try to allocate a few blocks.
+	for (int i = 0; i < MIN_MEM_BLOCKS; ++i) {
 		test_mem_request();
 	}
 
@@ -201,7 +216,7 @@ void proc1(void)
 	test_transition("Set user priority (no-op)", "Set user priority (higher)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
 
-	test_transition("Set user priority (inversion 2)", "Preempt (inversion)");
+	test_transition("Set user priority (inversion)", "Preempt (inversion)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, HIGH));
 	test_mem_release();
 
@@ -218,7 +233,7 @@ void proc1(void)
 		test_mem_release();
 		++blocks;
 	}
-	TEST_ASSERT(blocks >= 30);
+	TEST_ASSERT(blocks >= 5);
 
 	test_transition("Count blocks", "Send self message");
 	{
@@ -305,6 +320,9 @@ void proc2(void)
 {
 	printf("Started %s\n", __FUNCTION__);
 
+	while (test_mem_blocks < MIN_MEM_BLOCKS) {
+		release_processor();
+	}
 	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
 	// Let's free enough memory
 	test_mem_release();
@@ -315,7 +333,7 @@ void proc2(void)
 	TEST_EXPECT(0, test_release_processor());
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
-	for (int i = 0; i < 3 && test_state == "Set user priority (inversion)"; ++i) {
+	for (int i = 0; i < 30 && test_state == "Set user priority (inversion)"; ++i) {
 		test_mem_request();
 	}
 
@@ -365,9 +383,6 @@ void proc3(void)
 	// Since proc1 was preempted, it's at the back of the ready queue
 	// Let's run it.
 	test_transition("Equal priority memory unblocking 2", "Equal priority memory unblocked");
-	test_release_processor();
-
-	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
 	test_release_processor();
 
 	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");

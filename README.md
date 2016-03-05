@@ -59,6 +59,7 @@ Since someone needs to manually test the wall clock process for the keyboard/dis
 However, any IPC not tested in the wall clock process is tested in the user test processes.
 
 In addition, the strict FIFO ordering requirement was removed because timeslicing can arbitrarily cause a process to be executed out of FIFO order.
+The memory blocking behaviour is also much harder to test, due to the non-deterministic preemption, so some of the tests of preemption under memory pressure are relaxed.
 Instead, each test process will release the processor up to `NUM_PROCS` times.
 
 ## Wall clock process
