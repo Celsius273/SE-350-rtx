@@ -43,9 +43,6 @@ LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 /* array of list of processes that are in RDY state, one for each priority */
 #define g_ready_queue (blocked[RDY])
 
-/* array of list of processes that are in BLOCKED_ON_RECEIVE state, one for each priority */
-#define g_blocked_on_receive_queue (blocked[BLOCKED_ON_RECEIVE])
-
 /* array of message queues (mailbox) for each processes */
 LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
 
@@ -202,11 +199,16 @@ int k_release_processor(void)
 		svc indirect calls release processor, user space calls it
 
 	*/
-	if (p_pcb_old->m_state == BLOCKED_ON_RESOURCE) {
-		push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
-	}
-	else {
-		push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+	switch (p_pcb_old->m_state) {
+		case BLOCKED_ON_RESOURCE:
+			push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+			break;
+		case BLOCKED_ON_RECEIVE:
+			break;
+		case RDY:
+			push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+			break;
+		assert(false);
 	}
 
 	process_switch(old_pid);
@@ -287,18 +289,7 @@ void k_poll(PROC_STATE_E which) {
 			// Hacked in k_release_processor
 			break;
 		case BLOCKED_ON_RECEIVE:
-			{
-				void *p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
-
-				//don't re-add the process if it has already been added to the queue
-				if (!(
-							!is_pid_queue_empty(p_blocked_on_receive_queue)
-							&& queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)
-					 )) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
-					/* put process in the blocked-on-receive-queue */
-					push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
-				}
-			}
+			// Also hacked :(
 			break;
 		default:
 			assert(false);
@@ -333,7 +324,6 @@ static int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
-        remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);		//Kelvin: implement remove_from_queue
         p_receiver_pcb->m_state = RDY;
         k_enqueue_ready_process(p_receiver_pcb);
 				k_check_preemption();
