@@ -79,27 +79,39 @@ void set_test_procs() {
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
 {
+	disable_irq();
 	// Silently allow for non-FIFO ordering
 	const char *const initial_test_state = test_state;
-	for (int i = 0; i < NUM_PROCS && test_state != from; ++i) {
+	const char *prev_test_state = test_state;
+	int tries = 0;
+	for (int i = 0; i < NUM_PROCS * 2 && test_state != from; ++i) {
+		enable_irq();
+		++tries;
 		release_processor();
+		disable_irq();
+		if (prev_test_state != test_state) {
+			prev_test_state = test_state;
+			i = 0;
+		}
 	}
 #ifdef DEBUG_0
 	if (from != test_state) {
 		printf(
-			"test_transition(%s, %s) expected state %s, but got %s (%s after %d tries)\n",
+			"test_transition(%s, %s)\n  expected state %s, but\n  got %s (%s after %d tries)\n",
 			from,
 			to,
 			from,
 			initial_test_state,
 			test_state,
-			NUM_TEST_PROCS
+			tries
 		);
+		assert(0);
 	}
 #endif
 	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
 	printf("Done: %s, starting: %s at %s:%d\n", test_state, to, __FILE__, lineno);
 	test_state = to;
+	enable_irq();
 }
 #define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
 
@@ -305,6 +317,9 @@ void proc2(void)
 {
 	printf("Started %s\n", __FUNCTION__);
 
+	while (test_mem_blocks < 10) {
+		release_processor();
+	}
 	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
 	// Let's free enough memory
 	test_mem_release();
