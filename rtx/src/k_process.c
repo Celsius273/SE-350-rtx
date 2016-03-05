@@ -276,31 +276,27 @@ void k_check_preemption(void) {
     }
 }
 
-/*Inter Process Communication Methods*/
-int k_send_message(int receiver_pid, void *p_msg_env)
-{
-	if (p_msg_env == NULL) {
-		return RTX_ERR;
-	}
-    
-  if (receiver_pid < 0 || receiver_pid >= NUM_PROCS) {
-		return RTX_ERR;
-	}
-  
-	__disable_irq();
-	if (k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env) == 1) {
-		//if the receiving process is of higher priority, preemption might happen
-		if (process[receiver_pid].m_priority <= process[running].m_priority) {
-			int ret = k_release_processor();
-			__enable_irq();
-			return ret;
-		}
-	}
-	__enable_irq();
-	return RTX_ERR;
+
+void k_poll(PROC_STATE_E which) {
+	assert(running != -1);
+	// TODO support other values
+	assert(which == BLOCKED_ON_RESOURCE);
+	process[running].m_state = which;
+	k_release_processor();
 }
 
-int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
+static int k_enqueue_ready_process(PCB *p_pcb)
+{
+    if(NULL == p_pcb) {
+        return RTX_ERR;
+    }
+    
+    push_process(g_ready_queue, p_pcb->m_pid, p_pcb->m_priority);
+    
+    return RTX_OK;
+}
+
+static int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 {
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;
@@ -326,6 +322,52 @@ int k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 			  __enable_irq();
         return 0;
     }
+}
+
+
+/*Inter Process Communication Methods*/
+int k_send_message(int receiver_pid, void *p_msg_env)
+{
+	if (p_msg_env == NULL) {
+		return RTX_ERR;
+	}
+    
+  if (receiver_pid < 0 || receiver_pid >= NUM_PROCS) {
+		return RTX_ERR;
+	}
+  
+	__disable_irq();
+	if (k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env) == 1) {
+		//if the receiving process is of higher priority, preemption might happen
+		if (process[receiver_pid].m_priority <= process[running].m_priority) {
+			int ret = k_release_processor();
+			__enable_irq();
+			return ret;
+		}
+	}
+	__enable_irq();
+	return RTX_ERR;
+}
+
+void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
+{		//p_pcb corresponds to the receiver pcb
+    void *p_blocked_on_receive_queue = NULL;
+    
+    if (p_pcb == NULL) {
+        return;
+    }
+    
+    p_pcb->m_state = BLOCKED_ON_RECEIVE;
+		
+    p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
+    
+    if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
+        //don't re-add the process if it has already been added to the queue
+        return;
+    }
+    
+    /* put process in the blocked-on-receive-queue */
+    push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
 }
 
 void *k_receive_message(int *p_sender_pid)
@@ -354,27 +396,6 @@ void *k_receive_message(int *p_sender_pid)
 	return (void *)((U8 *)p_msg);
 }
 
-void k_enqueue_blocked_on_receive_process(PCB *p_pcb)
-{		//p_pcb corresponds to the receiver pcb
-    void *p_blocked_on_receive_queue = NULL;
-    
-    if (p_pcb == NULL) {
-        return;
-    }
-    
-    p_pcb->m_state = BLOCKED_ON_RECEIVE;
-		
-    p_blocked_on_receive_queue = &g_blocked_on_receive_queue[p_pcb->m_priority];
-    
-    if (!is_pid_queue_empty(p_blocked_on_receive_queue) && queue_contains_node(p_blocked_on_receive_queue, p_pcb->m_pid)) {	//Kelvin: Please add queue_contains_node(void*, pcb_id)
-        //don't re-add the process if it has already been added to the queue
-        return;
-    }
-    
-    /* put process in the blocked-on-receive-queue */
-    push_process(g_blocked_on_receive_queue, p_pcb->m_pid, p_pcb->m_priority);
-}
-
 void *k_non_blocking_receive_message(int pid)
 {
 		__disable_irq();
@@ -387,18 +408,6 @@ void *k_non_blocking_receive_message(int pid)
         return NULL;
     }
 }
-
-int k_enqueue_ready_process(PCB *p_pcb)
-{
-    if(NULL == p_pcb) {
-        return RTX_ERR;
-    }
-    
-    push_process(g_ready_queue, p_pcb->m_pid, p_pcb->m_priority);
-    
-    return RTX_OK;
-}
-
 
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay)
 {
