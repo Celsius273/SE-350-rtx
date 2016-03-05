@@ -10,10 +10,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include "rtx.h"
 #include "k_process.h"
 #include "usr_proc.h"
 #include "printf.h"
+
 
 #define NUM_TESTS 186
 #define GROUP_ID "004"
@@ -24,7 +26,7 @@
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 static volatile int proc2_work_remaining = 3, proc3_work_remaining = 3, finished_proc = 0, finished = 0;
 static int tests_ran = 0, tests_failed = 0;
-const char *test_state = "Starting tests";
+const char *volatile test_state = "Starting tests";
 
 static void infinite_loop(void)
 {
@@ -77,29 +79,49 @@ void set_test_procs() {
 	g_test_procs[5].mpf_start_pc = &proc6;
 }
 
+static bool compare_and_swap(const char *volatile *const ref, const char *const from, const char *const to) {
+	__disable_irq();
+	if (*ref == from) {
+		*ref = to;
+		__enable_irq();
+		return true;
+	}
+	__enable_irq();
+	return false;
+}
+
 static void test_transition_impl(const char *from, const char *to, int lineno)
 {
 	// Silently allow for non-FIFO ordering
 	const char *const initial_test_state = test_state;
-	for (int i = 0; i < NUM_PROCS && test_state != from; ++i) {
+	bool transition_succeeded = false;
+	for (int i = 0;; ++i) {
+		if (compare_and_swap(&test_state, from, to)) {
+			transition_succeeded = true;
+			break;
+		}
+		if (i == NUM_TEST_PROCS) {
+			break;
+		}
 		release_processor();
 	}
+	
 #ifdef DEBUG_0
-	if (from != test_state) {
+	if (!transition_succeeded) {
+		// Not race-free, but okay for debugging
 		printf(
-			"test_transition(%s, %s) expected state %s, but got %s (%s after %d tries)\n",
+			"test_transition(%s, %s): after test_transition(..., %s), got test_transition(%s, ...) (%s after %d tries)\n",
 			from,
 			to,
-			from,
 			initial_test_state,
+			from,
 			test_state,
 			NUM_TEST_PROCS
 		);
 	}
 #endif
-	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
-	printf("Done: %s, starting: %s at %s:%d\n", test_state, to, __FILE__, lineno);
-	test_state = to;
+	test_assert(transition_succeeded, "from == test_state (OS scheduled wrong process)", lineno);
+	printf("Done: %s, starting: %s at %s:%d\n", from, to, __FILE__, lineno);
 }
 #define test_transition(from, to) test_transition_impl((from), (to), __LINE__)
 
