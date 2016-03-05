@@ -29,6 +29,8 @@ typedef struct msgbuf
 use k_data[0] as delay
 */
 
+typedef MSG_BUF* message_queue_t;
+
 // dequeue like a queue
 MSG_BUF *dequeue_message(MSG_BUF** p_msg); 
 
