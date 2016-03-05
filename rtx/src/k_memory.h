@@ -12,6 +12,8 @@
 #include "k_process.h"
 #include "list.h"
 
+#include "allow_k.h"
+
 typedef struct mem_t{
 	// Guarantee 8-byte alignment, the largest common alignment
 	U32 m_val[(MEM_BLOCK_SIZE + 3) / 4] __attribute__ ((aligned (8)));
@@ -35,4 +37,5 @@ int k_release_memory_block(void *);
 
 int k_memory_heap_free_blocks(void);
 
+#include "disallow_k.h"
 #endif /* ! K_MEM_H_ */

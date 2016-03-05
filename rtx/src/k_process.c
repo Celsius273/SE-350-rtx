@@ -33,6 +33,8 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
+#include "allow_k.h"
+
 /* ----- Global Variables ----- */
 static PCB process[NUM_PROCS];   /* array of processes */
 const static pid_t PID_NONE = -1;

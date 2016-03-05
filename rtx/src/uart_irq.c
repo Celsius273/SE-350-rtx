@@ -12,6 +12,7 @@
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
+#include "allow_k.h"
 
 
 uint8_t g_buffer[]= "You Typed a Q\n\r";

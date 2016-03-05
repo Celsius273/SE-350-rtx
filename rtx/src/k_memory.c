@@ -14,6 +14,8 @@
 #include "printf.h"
 #endif /* ! DEBUG_0 */
 
+#include "allow_k.h"
+
 /* ----- Global Variables ----- */
 U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
                /* The first stack starts at the RAM high address */
