@@ -32,7 +32,8 @@
 
 /* ----- Global Variables ----- */
 PCB process[NUM_PROCS];   /* array of processes */
-static pid_t running = -1; /* always point to the current RUN process */
+const static pid_t PID_NONE = -1;
+static pid_t running = PID_NONE; /* always point to the current RUN process */
 
 // Array of blocked PIDs
 LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
@@ -42,9 +43,6 @@ LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of list of processes that are in RDY state, one for each priority */
 #define g_ready_queue (blocked[RDY])
-
-/* array of list of processes that are in BLOCKED_ON_RECEIVE state, one for each priority */
-#define g_blocked_on_receive_queue (blocked[BLOCKED_ON_RECEIVE])
 
 /* array of message queues (mailbox) for each processes */
 LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS);
@@ -125,7 +123,7 @@ static void scheduler(void)
 			peek_priority = process[peek_pid].m_priority;
 		}
 	
-		if(running != -1 && peek_priority > process[running].m_priority && process[running].m_state != BLOCKED_ON_RESOURCE) {
+		if(running != PID_NONE && peek_priority > process[running].m_priority && process[running].m_state != BLOCKED_ON_RESOURCE) {
 			return;
 		}
 		
@@ -184,7 +182,6 @@ static int process_switch(pid_t old_pid)
 int k_release_processor(void)
 {
 	pid_t old_pid = running;
-	PCB *const p_pcb_old = &process[old_pid];
 	scheduler();
 
 	if (running == old_pid) {
@@ -202,13 +199,23 @@ int k_release_processor(void)
 		svc indirect calls release processor, user space calls it
 
 	*/
-	if (p_pcb_old->m_state == BLOCKED_ON_RECEIVE) {
-		// Blocked on receive doesn't have a queue
-		// Simply check if p_pcb->m_state == BLOCKED_ON_RECEIVE
-	} else if (p_pcb_old->m_state == BLOCKED_ON_RESOURCE) {
-		push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
-	} else {
-		push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+
+	if (old_pid != PID_NONE) {
+		PCB *const p_pcb_old = &process[old_pid];
+		switch (p_pcb_old->m_state) {
+			case BLOCKED_ON_RESOURCE:
+				push_process(g_blocked_on_resource_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+				break;
+			case BLOCKED_ON_RECEIVE:
+				break;
+			case RUN:
+				p_pcb_old->m_state = RDY;
+			case RDY:
+				push_process(g_ready_queue, p_pcb_old->m_pid, p_pcb_old->m_priority);
+				break;
+			default:
+				assert(false);
+		}
 	}
 
 	process_switch(old_pid);
@@ -272,14 +279,14 @@ void k_check_preemption(void) {
 
 	pid_t ready = peek_front(g_ready_queue);
 
-	if(ready != -1 && process[running].m_priority > process[ready].m_priority){
+	if(ready != PID_NONE && process[running].m_priority > process[ready].m_priority){
     	k_release_processor();
     }
 }
 
 
 void k_poll(PROC_STATE_E which) {
-	assert(running != -1);
+	assert(running != PID_NONE);
 	PCB *const p_pcb = &process[running];
 	p_pcb->m_state = which;
 	switch (which) {
@@ -325,7 +332,6 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
         //if the process was previously in the blocked queue, unblock it and put it in the ready queue
-        remove_from_queue(&g_blocked_on_receive_queue[p_receiver_pcb->m_priority] , p_receiver_pcb->m_pid);
         p_receiver_pcb->m_state = RDY;
         k_enqueue_ready_process(p_receiver_pcb);
     } 
@@ -346,16 +352,13 @@ int k_send_message(int receiver_pid, void *p_msg_env)
 	}
   
 	__disable_irq();
-	if (k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env) == 1) {
+	k_send_message_helper(process[running].m_pid, receiver_pid, p_msg_env);
 		//if the receiving process is of higher priority, preemption might happen
-		if (process[receiver_pid].m_priority <= process[running].m_priority) {
-			int ret = k_release_processor();
-			__enable_irq();
-			return ret;
-		}
-	}
+	
 	__enable_irq();
-	return RTX_ERR;
+	k_check_preemption();
+	
+	return RTX_OK;
 }
 
 void *k_receive_message(int *p_sender_pid)
