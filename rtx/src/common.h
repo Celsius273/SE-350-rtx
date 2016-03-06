@@ -7,6 +7,8 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#define LOW_MEM
+
 #define K_MSG_ENV
 
 /* Definitions */

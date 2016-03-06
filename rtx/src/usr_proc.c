@@ -46,8 +46,15 @@ void test_assert(int expected, const char *msg, int lineno) {
 	test_printf("test %d %s\n", ++tests_ran, status);
 }
 
+#ifdef LOW_MEM
+#define TEST_ASSERT(expected) \
+	test_assert(!!(expected), "See usr_proc.c", __LINE__) \
+
+#else
 #define TEST_ASSERT(expected) \
 	test_assert(!!(expected), #expected, __LINE__); \
+
+#endif
 
 #define TEST_EXPECT(expected, actual) TEST_ASSERT((expected) == (actual));
 
