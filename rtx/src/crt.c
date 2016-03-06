@@ -1,29 +1,45 @@
-#include <LPC17xx.h>
-#include "uart_polling.h"
-#include "common.h"
-#include "printf.h"
+#include "uart.h"
 #include "crt.h"
+#include "message_queue.h"
+
+MSG_BUF *output = NULL;
+int offset = 0;
 
 void proc_crt() {
-	while(1) {
-		MSG_BUF* message = receive_message(NULL);
-		
-		if (NULL == message || message->mtype != CRT_DISPLAY) {
-			printf("ERROR: The CRT received a message that is not type of CRT_DISPLAY");
+	for (;;) {
+		int from = -1;
+		MSG_BUF* msg = receive_message(&from);
+		if (msg == NULL) {
+			assert(0);
+			continue;
+		} else if (msg->mtype == CRT_DISPLAY) {
+			msg->m_kdata[0] = 0;
+			enqueue_message(msg, &output);
+			// We're unblocked.
+		} else if (from == PID_UART_IPROC) {
+			// We're unblocked.
 		} else {
-			printf("============ Running CRT Process =================");
-			
-			send_message(PID_UART_IPROC, message);
-			LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef*) LPC_UART0;
-			
-			// We set the following bits to send a UART Interrupt, which 
-			// jumps to the UART_Interrupt Handler, which runs the UART-i process
-			// To print the message to the screen
-			pUart->IER = IER_THRE | IER_RLS | IER_RBR;
-			pUart->THR = '\0';
-			
-			// Release memory for the message
-			release_memory_block(message);
+			assert(0);
+		}
+
+		// Block ourselves
+		while (!is_queue_empty(&output)) {
+			// Check if we have a character to print.
+			// Allow printing the last character, if it's not '\0'
+			if (!(offset <= MTEXT_MAXLEN && output->mtext[offset])) {
+				MSG_BUF *empty = output;
+				output = output->mp_next;
+				offset = 0;
+				release_memory_block(empty);
+				continue;
+			}
+
+			// Try to print the next character
+			if (!uart_iproc_putc(output->mtext[offset])) {
+				// Blocked!
+				break;
+			}
+			++offset;
 		}
 	}
 }

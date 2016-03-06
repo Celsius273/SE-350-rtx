@@ -37,6 +37,7 @@ static void uart_send_input_char(uint8_t ch) {
 	LL_PUSH_BACK(inbuf, ch);
 	if (uart_iproc_notif_in && ch == '\r') {
 		uart_iproc_notif_in = false;
+		notif_in_msg.mtype = DEFAULT;
 		k_send_message(PID_KCD, &notif_in_msg);
 	}
 }
@@ -46,6 +47,7 @@ static int uart_pop_output_char(void) {
 	if (LL_SIZE(outbuf) == 0) {
 		if (uart_iproc_notif_out) {
 			uart_iproc_notif_out = false;
+			notif_in_msg.mtype = DEFAULT;
 			k_send_message(PID_CRT, &notif_out_msg);
 		}
 		return NO_CHAR;
