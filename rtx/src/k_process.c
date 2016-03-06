@@ -473,7 +473,7 @@ int k_delayed_send(int receiver_id, void *p_msg_env, int delay) {
 		return RTX_OK;
 }
 
-void check_delayed_messages(void) {
+void k_check_delayed_messages(void) {
 	disable_irq();
 	for (;;) {
 		MSG_BUF *const msg = dequeue_message(&g_delayed_msg_queue);
