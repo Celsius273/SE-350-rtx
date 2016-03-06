@@ -371,8 +371,6 @@ void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     
     p_receiver_pcb = &process[receiver_pid];
 	
-	// TODO log as sent
-    
     LL_PUSH_BACK(g_message_queues[receiver_pid], p_msg_envelope);
 		
     if (p_receiver_pcb->m_state == BLOCKED_ON_RECEIVE) {
