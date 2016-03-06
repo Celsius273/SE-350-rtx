@@ -56,6 +56,8 @@
 #define KCD_REG 1
 #define CRT_DISPLAY 2
 
+#define NO_CHAR (-1)
+
 /* ----- Types ----- */
 typedef unsigned char U8;
 typedef unsigned int U32;
