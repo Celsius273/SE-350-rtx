@@ -248,6 +248,7 @@ void c_UART0_IRQHandler(void)
 		if (ch == NO_CHAR) {
 			// Disable the interrupt
 			UART(0)->IER &= ~IER_THRE;
+			uart_thre = false;
 		} else {
 			uart_putc_nonblocking(ch);
 		}
