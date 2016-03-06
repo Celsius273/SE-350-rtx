@@ -45,7 +45,12 @@ void k_check_preemption_eager(void);
 void k_poll(PROC_STATE_E which);
 // Unblock processes receiving delayed messages.
 // Move the messages to the appropriate queue.
-void check_delayed_messages(void);
+void k_check_delayed_messages(void);
+
+#ifdef _DEBUG_HOTKEYS
+// Print the message log to UART1
+void k_print_message_log(void);
+#endif
 
 // System calls
 int k_set_process_priority(int process_id, int priority);
@@ -57,7 +62,11 @@ void *k_receive_message(int *sender_id);
 
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay);
 
+
 void k_print_blocked_on_receive(void);
+
+void k_print_ready_queue(void);
+
 
 #include "disallow_k.h"
 #endif /* ! K_PROCESS_H_ */

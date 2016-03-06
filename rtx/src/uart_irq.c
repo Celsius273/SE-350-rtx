@@ -28,8 +28,31 @@ LL_DECLARE(volatile inbuf, uint8_t, 200);
 MSG_BUF notif_in_msg;
 MSG_BUF notif_out_msg;
 
+static bool check_hotkey(uint8_t ch) {
+#ifdef _DEBUG_HOTKEYS
+	switch (ch) {
+		case HOTKEY_READY_QUEUE:
+			k_print_ready_queue();
+			return true;
+		case HOTKEY_BLOCKED_MEM_QUEUE:
+			k_print_blocked_on_memory_queue();
+			return true;
+		case HOTKEY_BLOCKED_MSG_QUEUE:
+			k_print_blocked_on_receive_queue();
+			return true;
+		case HOTKEY_MSG_LOG:
+			k_print_message_log();
+			break;
+	}
+#endif
+	return false;
+}
+
 // Send the input character to the appropriate process(es)
 static void uart_send_input_char(uint8_t ch) {
+	if (check_hotkey(ch)) {
+		return;
+	}
 	if (LL_SIZE(inbuf) == LL_CAPACITY(inbuf)) {
 		// Drop the character
 		return;
