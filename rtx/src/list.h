@@ -43,7 +43,7 @@ typedef struct ll_header {
  */
 #define LL_SIZE(list) ((list).header.size)
 
-int ll_push_front_impl(ll_header_t *header, int capacity);
+int ll_push_front_impl(volatile ll_header_t *header, int capacity);
 /**
  * LL_PUSH_FRONT(list) = value;
  * Push value onto the front of the list.
@@ -55,7 +55,7 @@ int ll_push_front_impl(ll_header_t *header, int capacity);
  */
 #define LL_PUSH_FRONT(list, value) (LL_PUSH_FRONT_(list) = (value))
 
-int ll_push_back_impl(ll_header_t *header, int capacity);
+int ll_push_back_impl(volatile ll_header_t *header, int capacity);
 /**
  * LL_PUSH_BACK(list) = value;
  * Push value onto the back of the list.
@@ -67,28 +67,28 @@ int ll_push_back_impl(ll_header_t *header, int capacity);
  */
 #define LL_PUSH_BACK(list, value) (LL_PUSH_BACK_(list) = (value))
 
-int ll_pop_front_impl(ll_header_t *header, int capacity);
+int ll_pop_front_impl(volatile ll_header_t *header, int capacity);
 /**
  * value = LL_POP_FRONT(list);
  * Pop value off the front of the list.
  */
 #define LL_POP_FRONT(list) ((list).values[ll_pop_front_impl(&(list).header, LL_CAPACITY((list)))])
 
-int ll_pop_back_impl(ll_header_t *header, int capacity);
+int ll_pop_back_impl(volatile ll_header_t *header, int capacity);
 /**
  * value = LL_POP_BACK(list);
  * Pop value off the front of the list.
  */
 #define LL_POP_BACK(list) ((list).values[ll_pop_back_impl(&(list).header, LL_CAPACITY((list)))])
 
-int ll_front_impl(ll_header_t *header, int capacity);
+int ll_front_impl(volatile ll_header_t *header, int capacity);
 /**
  * value = LL_FRONT(list);
  * Peek at value off the front of the list, without popping it.
  */
 #define LL_FRONT(list) ((list).values[ll_front_impl(&(list).header, LL_CAPACITY((list)))])
 
-int ll_back_impl(ll_header_t *header, int capacity);
+int ll_back_impl(volatile ll_header_t *header, int capacity);
 /**
  * value = LL_BACK(list);
  * Peek at value off the back of the list, without popping it.

@@ -9,6 +9,7 @@
 
 /* typedefs */
 #include <stdint.h>	
+#include <stdbool.h>
 #include "uart_def.h"
 
 /* The following macros are from NXP uart.h */

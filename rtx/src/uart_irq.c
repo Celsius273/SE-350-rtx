@@ -13,7 +13,7 @@
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
-#include "k_processor.h"
+#include "k_process.h"
 #include "allow_k.h"
 
 #define UART(i) ((LPC_UART_TypeDef *)LPC_UART ## i)

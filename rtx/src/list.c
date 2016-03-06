@@ -2,7 +2,7 @@
 #include "list.h"
 
 #ifdef DEBUG_0
-static void assert_header_valid(ll_header_t *header, int capacity) {
+static void assert_header_valid(volatile ll_header_t *header, int capacity) {
 	assert(0 <= header->start && header->start < capacity);
 	assert(0 <= header->size && header->size <= capacity);
 }
@@ -10,30 +10,30 @@ static void assert_header_valid(ll_header_t *header, int capacity) {
 #define assert_header_valid(...)
 #endif
 
-int ll_push_front_impl(ll_header_t *header, int capacity) {
+int ll_push_front_impl(volatile ll_header_t *header, int capacity) {
 	assert_header_valid(header, capacity);
 	assert(header->size < capacity);
 	++header->size;
 	return header->start = (header->start + capacity - 1) % capacity;
 }
 
-int ll_push_back_impl(ll_header_t *header, int capacity) {
+int ll_push_back_impl(volatile ll_header_t *header, int capacity) {
 	assert_header_valid(header, capacity);
 	assert(header->size < capacity);
 	return (header->start + header->size++) % capacity;
 }
 
-int ll_front_impl(ll_header_t *header, int capacity) {
+int ll_front_impl(volatile ll_header_t *header, int capacity) {
 	assert_header_valid(header, capacity);
 	return header->start;
 }
 
-int ll_back_impl(ll_header_t *header, int capacity) {
+int ll_back_impl(volatile ll_header_t *header, int capacity) {
 	assert_header_valid(header, capacity);
 	return (header->start + header->size) % capacity;
 }
 
-int ll_pop_front_impl(ll_header_t *header, int capacity) {
+int ll_pop_front_impl(volatile ll_header_t *header, int capacity) {
 	assert_header_valid(header, capacity);
 	assert(header->size > 0);
 	const int cur = header->start;
@@ -42,7 +42,7 @@ int ll_pop_front_impl(ll_header_t *header, int capacity) {
 	return cur;
 }
 
-int ll_pop_back_impl(ll_header_t *header, int capacity) {
+int ll_pop_back_impl(volatile ll_header_t *header, int capacity) {
 	assert_header_valid(header, capacity);
 	assert(header->size > 0);
 	const int cur = (header->start + header->size) % capacity;
