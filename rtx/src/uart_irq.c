@@ -63,12 +63,15 @@ static int uart_pop_output_char(void) {
 
 // Queue a character for printing, without blocking
 static void uart_putc_nonblocking(uint8_t ch) {
-	if (uart_thre) {
-		UART(0)->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
-		uart_thre = true;
-		UART(0)->THR = ch;
-	} else if (LL_SIZE(outbuf) != LL_CAPACITY(outbuf)) {
+	if (LL_SIZE(outbuf) != LL_CAPACITY(outbuf)) {
 		LL_PUSH_BACK(outbuf, ch);
+	}
+	// LL_SIZE(outbuf) != 0
+	if (uart_thre) {
+		// Ensure the THRE interrupt is enabled
+		uart_thre = true;
+		UART(0)->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
+		UART(0)->THR = ch;
 	}
 }
 
@@ -250,7 +253,7 @@ void c_UART0_IRQHandler(void)
 			UART(0)->IER &= ~IER_THRE;
 			uart_thre = false;
 		} else {
-			uart_putc_nonblocking(ch);
+			UART(0)->THR = ch;
 		}
 	} else {  /* not implemented yet */
 #ifdef DEBUG_0
