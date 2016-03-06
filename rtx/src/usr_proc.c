@@ -11,11 +11,16 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "rtx.h"
+#include "common.h"
 #include "k_process.h"
 #include "usr_proc.h"
 #include "printf.h"
 
+#ifdef HAS_TIMESLICING
 #define NUM_TESTS 122
+#else
+#define NUM_TESTS 121
+#endif
 #define GROUP_ID "004"
 
 #define test_printf(...) printf("G" GROUP_ID "_test: " __VA_ARGS__)
@@ -29,6 +34,7 @@ const char *test_state = "Starting tests";
 static void infinite_loop(void)
 {
 	for (;;) {
+		release_processor();
 	}
 }
 
@@ -173,12 +179,6 @@ static int test_get_process_priority(int pid) {
 	return prio;
 }
 
-#define PID_P1 1
-#define PID_P2 2
-#define PID_P3 3
-#define PID_P4 4
-#define PID_P5 5
-#define PID_P6 6
 #define MIN_MEM_BLOCKS 5
 
 /**
@@ -189,10 +189,6 @@ void proc1(void)
 	test_printf("START\n");
 	test_printf("total %d tests\n", NUM_TESTS);
 
-	// int test_release_processor();
-	// This primitive transfers the control to the RTX (the calling process voluntarily releases
-	// the processor). The invoking process remains ready to execute and is put at the end of the
-	// ready queue of the same priority. Another process may possibly be selected for execution.
 	test_transition(test_state, "Memory blocking");
 	test_set_process_priority(PID_P1, LOW);
 	// Due to preemption, we can't tell whether we're blocked.

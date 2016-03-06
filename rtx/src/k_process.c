@@ -79,7 +79,7 @@ static void initialize_processes(const PROC_INIT *const inits, int num) {
 		int pid = init->m_pid;
 		// Check to make sure we're not overwriting a process
 		assert(pid < NUM_PROCS);
-		assert(!process[pid].mpf_start_pc);
+		assert(!process[pid].mp_sp);
 		process[pid].m_pid = pid;
 		process[pid].m_state = NEW;
 		process[pid].m_priority = init->m_priority;
