@@ -56,9 +56,10 @@
 
 /* Defining the Hot Keys for debug information */
 
-#define HOTKEY_READY_QUEUE 'a'
-#define HOTKEY_BLOCKED_MEM_QUEUE 'b'
-#define HOTKEY_BLOCKED_MSG_QUEUE 'c'
+#define HOTKEY_READY_QUEUE '!'
+#define HOTKEY_BLOCKED_MEM_QUEUE '@'
+#define HOTKEY_BLOCKED_MSG_QUEUE '#'
+#define HOTKEY_MSG_LOG '$'
 
 
 /* Message Types */
