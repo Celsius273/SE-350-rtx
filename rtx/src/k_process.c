@@ -30,13 +30,12 @@
 #include "k_memory.h"
 #include "timer.h"
 
-#ifdef DEBUG_0
 #include "printf.h"
-#endif /* DEBUG_0 */
 
 #include "allow_k.h"
 
 /* ----- Global Variables ----- */
+
 static PCB process[NUM_PROCS];   /* array of processes */
 const static pid_t PID_NONE = -1;
 static pid_t running = PID_NONE; /* always point to the current RUN process */
@@ -294,7 +293,7 @@ static void k_check_preemption_impl(bool is_eager) {
 		
 		for(int i = 0; i < NUM_PROCS; ++i) {
 			PCB* pcb = &process[i];
-			if(pcb->m_state == BLOCKED_ON_RESOURCE) {
+			if (pcb->m_priority < NULL_PRIO && pcb->m_state == BLOCKED_ON_RESOURCE) {
 				pcb->m_state = RDY;
 			}
 		}
@@ -367,6 +366,8 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     p_msg_envelope->m_recv_pid = receiver_pid;
     
     p_receiver_pcb = &process[receiver_pid];
+	
+	// TODO log as sent
     
     LL_PUSH_BACK(g_message_queues[receiver_pid], p_msg_envelope);
 		
@@ -376,12 +377,6 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
         k_enqueue_ready_process(receiver_pid);
     }
 }
-
-#ifdef _DEBUG_HOTKEYS
-void k_print_message_log(void) {
-	// TODO
-}
-#endif
 
 static bool validate_message(int receiver_pid, void *p_msg_env) {
 	if (p_msg_env == NULL) {

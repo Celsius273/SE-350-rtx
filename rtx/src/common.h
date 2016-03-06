@@ -59,7 +59,6 @@
 #define HOTKEY_READY_QUEUE '!'
 #define HOTKEY_BLOCKED_MEM_QUEUE '@'
 #define HOTKEY_BLOCKED_MSG_QUEUE '#'
-#define HOTKEY_MSG_LOG '$'
 
 
 /* Message Types */
