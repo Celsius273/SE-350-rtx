@@ -500,3 +500,24 @@ void disable_irq(void) {
 	__disable_irq();
 	++irq_lock_count;
 }
+
+void k_print_blocked_on_receive(void) {
+	printf("Blocked on receive:\n");
+	for (int prio = 0; prio < NULL_PRIO; ++prio) {
+		printf("Priority %d:", prio);
+		for (int i = 0; i < NUM_PROCS; ++i) {
+			if (prio == process[i].m_priority) {
+				if (BLOCKED_ON_RECEIVE == process[i].m_state) {
+					printf(" %d\n", process[i].m_pid);
+				}
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
+}
+void k_print_blocked_on_memory_queue(void) {
+	printf("Blocked on Memory:\n");
+	print_priority_queue(g_blocked_on_resource_queue);
+}
+
