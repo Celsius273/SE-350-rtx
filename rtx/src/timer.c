@@ -123,5 +123,5 @@ void c_TIMER0_IRQHandler(void)
 
 void proc_timer_i(void) {
 	k_check_delayed_messages();
-	k_check_preemption_eager();
+	k_check_preemption();
 }
