@@ -29,6 +29,7 @@ MSG_BUF notif_in_msg;
 MSG_BUF notif_out_msg;
 
 static bool check_hotkey(uint8_t ch) {
+#ifdef _DEBUG_HOTKEYS
 	switch (ch) {
 		case HOTKEY_READY_QUEUE:
 			k_print_ready_queue();
@@ -42,9 +43,9 @@ static bool check_hotkey(uint8_t ch) {
 		case HOTKEY_MSG_LOG:
 			k_print_message_log();
 			break;
-		default:
-			return false;
 	}
+#endif
+	return false;
 }
 
 // Send the input character to the appropriate process(es)

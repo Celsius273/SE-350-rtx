@@ -377,6 +377,12 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     }
 }
 
+#ifdef _DEBUG_HOTKEYS
+void k_print_message_log(void) {
+	// TODO
+}
+#endif
+
 static bool validate_message(int receiver_pid, void *p_msg_env) {
 	if (p_msg_env == NULL) {
 		return false;
