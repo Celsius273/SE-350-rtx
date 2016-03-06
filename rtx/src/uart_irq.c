@@ -18,7 +18,7 @@
 
 #define UART(i) ((LPC_UART_TypeDef *)LPC_UART ## i)
 
-// Whether the uart transmit holding register is empty
+// Whether the uart transmit holding register being transmitted
 volatile bool uart_thre = false;
 volatile bool uart_iproc_notif_in = false;
 volatile bool uart_iproc_notif_out = false;
@@ -84,11 +84,11 @@ static void uart_putc_nonblocking(uint8_t ch) {
 		LL_PUSH_BACK(outbuf, ch);
 	}
 	// LL_SIZE(outbuf) != 0
-	if (uart_thre) {
+	if (!uart_thre) {
 		// Ensure the THRE interrupt is enabled
 		uart_thre = true;
-		UART(0)->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
 		UART(0)->THR = ch;
+		UART(0)->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
 	}
 }
 
