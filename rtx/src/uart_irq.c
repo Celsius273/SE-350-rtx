@@ -21,7 +21,7 @@
 // Whether the uart transmit holding register being transmitted
 volatile bool uart_thre = false;
 volatile bool uart_iproc_notif_in = true;
-volatile bool uart_iproc_notif_out = true;
+volatile bool uart_iproc_notif_out = false;
 LL_DECLARE(volatile outbuf, uint8_t, 200);
 #define OUTBUF_THRESHOLD 100
 LL_DECLARE(volatile inbuf, uint8_t, 200);

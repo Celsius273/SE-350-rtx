@@ -416,7 +416,7 @@ void *k_receive_message(int *p_sender_pid)
 	while (LL_SIZE(g_message_queues[process[running].m_pid]) == 0) {
 		enable_irq();
 		k_poll(BLOCKED_ON_RECEIVE);
-	disable_irq();
+		disable_irq();
 		assert(LL_SIZE(g_message_queues[process[running].m_pid]) > 0);
 	}
 	

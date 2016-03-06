@@ -1,6 +1,7 @@
 #include <string.h>
 #include "common.h"
 #include "message_queue.h"
+#include "printf.h"
 
 #ifdef KCD_TEST
 
@@ -38,7 +39,7 @@ static void kcd_process_keyboard_input(MSG_BUF* message) {
 		char *text = message->mtext;
     for (MSG_BUF *cur = entries; cur; cur = cur->mp_next) {
         if (strncmp(text, cur->mtext, strlen(cur->mtext)) == 0) {
-            send_message(cur->m_recv_pid, memcpy(request_memory_block(), message, 128));
+            send_message(cur->m_send_pid, memcpy(request_memory_block(), message, 128));
         }
     }
 }
@@ -57,6 +58,8 @@ static void kcd_handle_keyboard_input(void) {
 				kcd_process_keyboard_input(&msg);
 				cmd_len = 0;
 				break;
+			case NO_CHAR:
+				return;
 			default:
 				if (cmd_len < MTEXT_MAXLEN) {
 					msg.mtext[cmd_len] = ch;
@@ -95,7 +98,7 @@ void proc_kcd(void) {
 			kcd_handle_keyboard_input();
 			continue; // don't free the block
 		} else {
-			uart1_put_string("ERROR: The KCD received a message that was not of type command registration or keyboard input!\n");
+			printf("message->mtype: %d sender_id: %d\n", message->mtype, sender_id);
 		}
 		
     release_memory_block(message);

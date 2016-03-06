@@ -73,7 +73,7 @@ void set_test_procs() {
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_test_procs[i].m_pid=(U32)(i+1);
 		g_test_procs[i].m_priority=LOWEST;
-		g_test_procs[i].m_stack_size=USR_SZ_STACK;
+		g_test_procs[i].m_stack_size=0x200;
 	}
   
 	g_test_procs[0].mpf_start_pc = &proc1;
