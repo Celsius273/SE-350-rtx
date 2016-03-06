@@ -36,15 +36,18 @@ static void kcd_process_command_registration(MSG_BUF* message) {
 }
 
 static void kcd_process_keyboard_input(MSG_BUF* message) {
-		char *text = message->mtext;
-    for (MSG_BUF *cur = entries; cur; cur = cur->mp_next) {
-        if (strncmp(text, cur->mtext, strlen(cur->mtext)) == 0) {
-            send_message(cur->m_send_pid, memcpy(request_memory_block(), message, 128));
-        }
-    }
+	char *text = message->mtext;
+	for (MSG_BUF *cur = entries; cur; cur = cur->mp_next) {
+		if (strncmp(text, cur->mtext, strlen(cur->mtext)) == 0) {
+			MSG_BUF *const block = request_memory_block();
+			memcpy(block, message, 128);
+			send_message(cur->m_send_pid, block);
+		}
+	}
 }
 
-static MSG_BUF msg;
+static char msg_buf[128];
+static MSG_BUF *msg = (MSG_BUF *) msg_buf;
 static int cmd_len = 0;
 // Call uart_iproc_getc until it returns NO_CHAR
 // Calls kcd_process_keyboard_input if appropriate
@@ -54,15 +57,15 @@ static void kcd_handle_keyboard_input(void) {
 			case '\n':
 				break;
 			case '\r':
-				msg.mtext[cmd_len] = '\0';
-				kcd_process_keyboard_input(&msg);
+				msg->mtext[cmd_len] = '\0';
+				kcd_process_keyboard_input(msg);
 				cmd_len = 0;
 				break;
 			case NO_CHAR:
 				return;
 			default:
 				if (cmd_len < MTEXT_MAXLEN) {
-					msg.mtext[cmd_len] = ch;
+					msg->mtext[cmd_len] = ch;
 					++cmd_len;
 				}
 		}
@@ -98,7 +101,7 @@ void proc_kcd(void) {
 			kcd_handle_keyboard_input();
 			continue; // don't free the block
 		} else {
-			printf("message->mtype: %d sender_id: %d\n", message->mtype, sender_id);
+			printf("KCD got invalid message: message->mtype: %d sender_id: %d\n", message->mtype, sender_id);
 		}
 		
     release_memory_block(message);

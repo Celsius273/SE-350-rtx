@@ -245,22 +245,23 @@ void proc1(void)
 
 	test_transition("Count blocks", "Send self message");
 	{
-		struct msgbuf msg;
-		msg.mtype = DEFAULT;
-		strcpy(msg.mtext, "Hi");
-		TEST_EXPECT(0, !send_message(-1, &msg));
-		TEST_EXPECT(0, delayed_send(PID_P1, &msg, 0));
+		char msg_buf[128];
+		struct msgbuf *msg = (struct msgbuf *)msg_buf;
+		msg->mtype = DEFAULT;
+		strcpy(msg->mtext, "Hi");
+		TEST_EXPECT(0, !send_message(-1, msg));
+		TEST_EXPECT(0, delayed_send(PID_P1, msg, 0));
 
 		{
 			int from = -1;
 			struct msgbuf *m1 = receive_message(&from);
 			TEST_EXPECT(PID_P1, from);
-			TEST_EXPECT(&msg, m1);
+			TEST_EXPECT(msg, m1);
 			TEST_ASSERT(!strcmp("Hi", m1->mtext));
 		}
 
 		{
-			TEST_EXPECT(0, send_message(PID_P1, &msg));
+			TEST_EXPECT(0, send_message(PID_P1, msg));
 			struct msgbuf *m2 = receive_message(NULL);
 			TEST_ASSERT(!strcmp("Hi", m2->mtext));
 		}

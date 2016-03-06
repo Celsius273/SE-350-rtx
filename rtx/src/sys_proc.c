@@ -91,9 +91,12 @@ static void clock_handle_tick(struct msgbuf *msg)
 				}
 			}
 		}
-		msg = (struct msgbuf *)memcpy(request_memory_block(), msg, 128);
+		struct msgbuf *const msg2 = (struct msgbuf *)request_memory_block();
+		memcpy(msg2, msg, 128);
+		msg = msg2;
 	} else {
 		msg = (struct msgbuf *)request_memory_block();
+		msg->mtype = DEFAULT;
 	}
 
 	crt_printf("Wall clock: %02u:%02u:%02u\n", clock_h, clock_m, clock_s);

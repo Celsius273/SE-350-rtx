@@ -41,7 +41,6 @@ void proc_crt(void) {
 				output = output->mp_next;
 				offset = 0;
 				release_memory_block(empty);
-				continue;
 			}
 		}
 	}

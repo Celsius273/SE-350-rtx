@@ -96,14 +96,6 @@ static void uart_putc_nonblocking(uint8_t ch) {
 	}
 }
 
-// Like uart_putc_nonblocking, but transforming CRLFs
-static void uart_print_char_nonblocking(uint8_t ch) {
-	uart_putc_nonblocking(ch);
-	if (ch == '\r') {
-		uart_putc_nonblocking('\n');
-	}
-}
-
 // Public UART APIs
 
 // Read a character, or NO_CHAR
@@ -129,7 +121,10 @@ bool uart_iproc_putc(uint8_t ch) {
 		uart_iproc_notif_out = true;
 		ret = false;
 	} else {
-		uart_print_char_nonblocking(ch);
+		if (ch == '\n') {
+			uart_putc_nonblocking('\r');
+		}
+		uart_putc_nonblocking(ch);
 		ret = true;
 	}
 	enable_irq();
@@ -305,7 +300,10 @@ void c_UART0_IRQHandler(void)
 		uint8_t ch = pUart->RBR;
 		if (ch != 127 && ch != '\b') { // skip backspace
 			// Echo-back before it's processed
-			uart_print_char_nonblocking(ch);
+			uart_putc_nonblocking(ch);
+			if (ch == '\r') {
+				uart_putc_nonblocking('\n');
+			}
 			uart_send_input_char(ch);
 		}
 	} else if (IIR_IntId & IIR_THRE) {
