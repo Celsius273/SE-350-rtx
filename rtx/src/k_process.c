@@ -360,7 +360,7 @@ static int k_enqueue_ready_process(pid_t receiver_pid)
 /**
  * Send a message. Must have IRQ lock.
  */
-static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
+void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
 {
     MSG_BUF *p_msg_envelope = NULL;
     PCB *p_receiver_pcb = NULL;

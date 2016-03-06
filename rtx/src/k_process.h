@@ -40,17 +40,13 @@ void disable_irq(void);
 // Does nothing if already preempted.
 void k_check_preemption(void);
 void k_check_preemption_eager(void);
+void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg);
 // Suspend the process until an event is triggered.
 // which is one of: RDY, BLOCKED_ON_RESOURCE, or BLOCKED_ON_RECEIVE
 void k_poll(PROC_STATE_E which);
 // Unblock processes receiving delayed messages.
 // Move the messages to the appropriate queue.
 void k_check_delayed_messages(void);
-
-#ifdef _DEBUG_HOTKEYS
-// Print the message log to UART1
-void k_print_message_log(void);
-#endif
 
 // System calls
 int k_set_process_priority(int process_id, int priority);

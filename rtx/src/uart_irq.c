@@ -20,8 +20,8 @@
 
 // Whether the uart transmit holding register being transmitted
 volatile bool uart_thre = false;
-volatile bool uart_iproc_notif_in = false;
-volatile bool uart_iproc_notif_out = false;
+volatile bool uart_iproc_notif_in = true;
+volatile bool uart_iproc_notif_out = true;
 LL_DECLARE(volatile outbuf, uint8_t, 200);
 #define OUTBUF_THRESHOLD 100
 LL_DECLARE(volatile inbuf, uint8_t, 200);
@@ -58,10 +58,12 @@ static void uart_send_input_char(uint8_t ch) {
 		return;
 	}
 	LL_PUSH_BACK(inbuf, ch);
-	if (uart_iproc_notif_in && ch == '\r') {
-		uart_iproc_notif_in = false;
-		notif_in_msg.mtype = DEFAULT;
-		k_send_message(PID_KCD, &notif_in_msg);
+	if (ch == '\r') {
+		if (uart_iproc_notif_in) {
+			uart_iproc_notif_in = false;
+			notif_in_msg.mtype = DEFAULT;
+			k_send_message_helper(PID_UART_IPROC, PID_KCD, &notif_in_msg);
+		}
 	}
 }
 
@@ -71,7 +73,7 @@ static int uart_pop_output_char(void) {
 		if (uart_iproc_notif_out) {
 			uart_iproc_notif_out = false;
 			notif_in_msg.mtype = DEFAULT;
-			k_send_message(PID_CRT, &notif_out_msg);
+			k_send_message_helper(PID_UART_IPROC, PID_CRT, &notif_out_msg);
 		}
 		return NO_CHAR;
 	}

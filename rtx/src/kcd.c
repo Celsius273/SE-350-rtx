@@ -80,7 +80,7 @@ all that's left is parsing the string
 void proc_kcd(void) {
 	//init_kcd_process();
 	int sender_id;
-	while (1) {
+	for (;;) {
 		MSG_BUF* message = (MSG_BUF *)receive_message(&sender_id);
 
 		if (message == NULL) {
