@@ -1,4 +1,3 @@
-
 /**
  * @brief: uart_irq.c 
  * @author: NXP Semiconductors
@@ -10,23 +9,98 @@
 #include "uart.h"
 #include "k_rtx.h"
 #include "uart_polling.h"
-#include "k_memory.h"
-#include "k_process.h"
+#include "list.h"
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
+#include "k_processor.h"
 #include "allow_k.h"
 
-uint8_t g_buffer[]= "You Typed a Q\n\r";
-uint8_t *gp_buffer = g_buffer;
-uint8_t g_send_char = 0;
-uint8_t g_char_in;
-uint8_t g_char_out;
+#define UART(i) ((LPC_UART_TypeDef *)LPC_UART ## i)
 
+// Whether the uart transmit holding register is empty
+volatile bool uart_thre = false;
+volatile bool uart_iproc_notif_in = false;
+volatile bool uart_iproc_notif_out = false;
+LL_DECLARE(volatile outbuf, uint8_t, 200);
+#define OUTBUF_THRESHOLD 100
+LL_DECLARE(volatile inbuf, uint8_t, 200);
+MSG_BUF notif_in_msg;
+MSG_BUF notif_out_msg;
 
-extern uint32_t g_switch_flag;
+// Send the input character to the appropriate process(es)
+static void uart_send_input_char(uint8_t ch) {
+	if (LL_SIZE(inbuf) == LL_CAPACITY(inbuf)) {
+		// Drop the character
+		return;
+	}
+	LL_PUSH_BACK(inbuf, ch);
+	if (uart_iproc_notif_in && ch == '\r') {
+		uart_iproc_notif_in = false;
+		k_send_message(PID_KCD, &notif_in_msg);
+	}
+}
 
-extern int k_release_processor(void);
+// Return the next character to output, or NO_CHAR
+static int uart_pop_output_char(void) {
+	if (LL_SIZE(outbuf) == 0) {
+		if (uart_iproc_notif_out) {
+			uart_iproc_notif_out = false;
+			k_send_message(PID_CRT, &notif_out_msg);
+		}
+		return NO_CHAR;
+	}
+	return LL_POP_FRONT(outbuf);
+}
+
+// Queue a character for printing, without blocking
+static void uart_putc_nonblocking(uint8_t ch) {
+	if (LL_SIZE(outbuf) != LL_CAPACITY(outbuf)) {
+		LL_PUSH_BACK(outbuf, ch);
+	}
+	// LL_SIZE(outbuf) != 0
+	if (uart_thre) {
+		// Ensure the THRE interrupt is enabled
+		uart_thre = true;
+		UART(0)->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
+		UART(0)->THR = ch;
+	}
+}
+
+// Public UART APIs
+
+// Read a character, or NO_CHAR
+// Enables input notification if NO_CHAR
+int uart_iproc_getc(void) {
+	int ret;
+	disable_irq();
+	if (LL_SIZE(inbuf) == 0) {
+		uart_iproc_notif_in = true;
+		ret = NO_CHAR;
+	} else {
+		ret = LL_POP_FRONT(inbuf);
+	}
+	enable_irq();
+	return ret;
+}
+
+// Write a character, or return 0 if failed
+bool uart_iproc_putc(uint8_t ch) {
+	bool ret;
+	disable_irq();
+	if (LL_SIZE(outbuf) > OUTBUF_THRESHOLD) {
+		uart_iproc_notif_out = true;
+		ret = false;
+	} else {
+		uart_putc_nonblocking(ch);
+		ret = true;
+	}
+	enable_irq();
+	return ret;
+}
+
+// UART low-level handlers
+
 /**
  * @brief: initialize the n_uart
  * NOTES: It only supports UART0. It can be easily extended to support UART1 IRQ.
@@ -158,8 +232,6 @@ int uart_irq_init(int n_uart) {
 	return 0;
 }
 
-U32 g_switch_flag = 0; // TODO remove
-
 /**
  * @brief: use CMSIS ISR for UART0 IRQ Handler
  * NOTE: This example shows how to save/restore all registers rather than just
@@ -171,23 +243,18 @@ __asm void UART0_IRQHandler(void)
 {
 	PRESERVE8
 	IMPORT c_UART0_IRQHandler
-	IMPORT k_release_processor
+	IMPORT k_check_preemption
 	PUSH{r4-r11, lr}
 	BL c_UART0_IRQHandler
-	LDR R4, =__cpp(&g_switch_flag)
-	LDR R4, [R4]
-	MOV R5, #0     
-	CMP R4, R5
-	BEQ  RESTORE    ; if g_switch_flag == 0, then restore the process that was interrupted
-	BL k_release_processor  ; otherwise (i.e g_switch_flag == 1, then switch to the other process)
-RESTORE
-	POP{r4-r11, pc}
+	POP{r4-r11, lr}
+	B k_check_preemption
 } 
 /**
  * @brief: c UART0 IRQ Handler
  */
 void c_UART0_IRQHandler(void)
 {
+	disable_irq();
 	uint8_t IIR_IntId;	    // Interrupt ID from IIR 		 
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
 	
@@ -199,88 +266,25 @@ void c_UART0_IRQHandler(void)
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
-		g_char_in = pUart->RBR;
-#ifdef DEBUG_0
-		uart1_put_string("Reading a char = ");
-		uart1_put_char(g_char_in);
-		uart1_put_string("\n\r");
-#endif // DEBUG_0
-		g_buffer[12] = g_char_in; // nasty hack
-		g_send_char = 1;
-		
-		
-		#ifdef DEBUG_HOTKEYS
-		switch(g_char_in) {
-			case HOTKEY_READY_QUEUE:
-                uart1_put_string("READY QUEUE:");
-               // Print ready queue content
-                break;
-            
-            case HOTKEY_BLOCKED_MEM_QUEUE:
-                uart1_put_string("MEM BLOCKED QUEUE:");
-						 // Print blocked queue content
-                
-                break;
-            
-            case HOTKEY_BLOCKED_MSG_QUEUE:
-                uart1_put_string("KEY BLOCKED QUEUE:");
-                // Print blocked on receive queue
-                break;
-            
-            default:
-                break;
-    }
-		
-		#endif
-		
-	
-		U8 *message_memory_block = (U8 *)k_request_memory_block();
-		if (message_memory_block == NULL) {
-			printf("Warning: Out of memory. Could not allocate block to send keyboard input to KCD.");
-			return;
-		}
-		
-		MSG_BUF* message = (MSG_BUF*) message_memory_block;
-		printf("UART: Alloc'd block %x for char %c", message, g_char_in);
-		message->mtype = KCD_KEYBOARD_INPUT;
-		message->mtext[0] = g_char_in;
-		message->mtext[1] = '\0';
-		
-		k_send_message(PID_KCD, message);
-		
-		return;
-		
-		
+		uint8_t ch = pUart->RBR;
+		// Echo-back before it's processed
+		uart_putc_nonblocking(ch);
+		uart_send_input_char(ch);
 	} else if (IIR_IntId & IIR_THRE) {
-		/* THRE Interrupt, transmit holding register becomes empty */
-		/* This means we want to print something */
+	/* THRE Interrupt, transmit holding register becomes empty */
 
-		if (*gp_buffer != '\0' ) {
-			g_char_out = *gp_buffer;
-#ifdef DEBUG_0
-			//uart1_put_string("Writing a char = ");
-			//uart1_put_char(g_char_out);
-			//uart1_put_string("\n\r");
-			
-			// you could use the printf instead
-			printf("Writing a char = %c \n\r", g_char_out);
-#endif // DEBUG_0			
-			pUart->THR = g_char_out;
-			gp_buffer++;
+		int ch = uart_pop_output_char();
+		if (ch == NO_CHAR) {
+			// Disable the interrupt
+			UART(0)->IER &= ~IER_THRE;
+			uart_thre = false;
 		} else {
-#ifdef DEBUG_0
-			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
-#endif // DEBUG_0
-			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
-			pUart->THR = '\0';
-			g_send_char = 0;
-			gp_buffer = g_buffer;		
+			UART(0)->THR = ch;
 		}
-	      
 	} else {  /* not implemented yet */
 #ifdef DEBUG_0
 			uart1_put_string("Should not get here!\n\r");
 #endif // DEBUG_0
-		return;
 	}	
+	enable_irq();
 }

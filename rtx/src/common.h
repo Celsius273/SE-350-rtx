@@ -65,6 +65,8 @@
 #define KCD_KEYBOARD_INPUT 2
 #define CRT_DISPLAY 3
 
+#define NO_CHAR (-1)
+
 /* ----- Types ----- */
 typedef unsigned char U8;
 typedef unsigned int U32;

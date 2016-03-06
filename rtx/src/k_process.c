@@ -417,7 +417,8 @@ void *k_receive_message(int *p_sender_pid)
 		assert(LL_SIZE(g_message_queues[process[running].m_pid]) > 0);
 	}
 	
-	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[process[running].m_pid]);
+	assert(LL_SIZE(g_message_queues[running]) > 0);
+	p_msg = (MSG_BUF *)LL_POP_FRONT(g_message_queues[running]);
 	
 	if (p_msg == NULL) {
 		enable_irq();
