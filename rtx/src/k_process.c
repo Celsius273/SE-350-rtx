@@ -374,6 +374,12 @@ static void k_send_message_helper(int sender_pid, int receiver_pid, void *p_msg)
     }
 }
 
+#ifdef _DEBUG_HOTKEYS
+void k_print_message_log(void) {
+	// TODO
+}
+#endif
+
 static bool validate_message(int receiver_pid, void *p_msg_env) {
 	if (p_msg_env == NULL) {
 		return false;
@@ -470,7 +476,7 @@ int k_delayed_send(int receiver_id, void *p_msg_env, int delay) {
 		return RTX_OK;
 }
 
-void check_delayed_messages(void) {
+void k_check_delayed_messages(void) {
 	disable_irq();
 	for (;;) {
 		MSG_BUF *const msg = dequeue_message(&g_delayed_msg_queue);
