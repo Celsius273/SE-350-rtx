@@ -61,7 +61,7 @@ static int crt_printf(const char *fmt, ...) {
 	{
 		va_list va;
 		va_start(va, fmt);
-		ret = vsnprintf(msg->mtext, MTEXT_MAXLEN, fmt, va);
+		ret = _vsnprintf(msg->mtext, MTEXT_MAXLEN, fmt, va);
 		msg->mtext[MTEXT_MAXLEN] = '\0';
 		va_end(va);
 	}
@@ -110,7 +110,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 	unsigned int h, m, s;
 	int bytes_read = 0;
 	cmd->mtext[MTEXT_MAXLEN] = '\0';
-	int nread = sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);
+	int nread = _sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);
 	if (nread < 1 || nread != (c == 'S' ? 4 : 1)) {
 		// Didn't convert enough
 		c = '\0';
