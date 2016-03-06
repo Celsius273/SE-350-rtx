@@ -193,15 +193,16 @@ void proc1(void)
 	// This primitive transfers the control to the RTX (the calling process voluntarily releases
 	// the processor). The invoking process remains ready to execute and is put at the end of the
 	// ready queue of the same priority. Another process may possibly be selected for execution.
-	test_transition(test_state, "Equal priority memory blocking");
+	test_transition(test_state, "Memory blocking");
+	test_set_process_priority(PID_P1, LOW);
 	// Due to preemption, we can't tell whether we're blocked.
 	// Try to allocate a few blocks.
-	for (int i = 0; i < MIN_MEM_BLOCKS; ++i) {
+	while (test_state == "Memory blocking") {
 		test_mem_request();
 	}
 
 	// We should have been unblocked
-	test_transition("Equal priority memory unblocked", "Get priority");
+	test_transition("Memory unblocked", "Get priority");
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P1));
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P2));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
@@ -325,17 +326,12 @@ void proc2(void)
 {
 	printf("Started %s\n", __FUNCTION__);
 
-	while (test_mem_blocks < MIN_MEM_BLOCKS) {
-		release_processor();
-	}
-	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
+	test_transition("Memory blocking", "Memory blocked");
+	test_set_process_priority(PID_P1, LOWEST);
 	// Let's free enough memory
 	test_mem_release();
 	test_mem_release();
-
-	test_transition("Equal priority memory unblocking", "Equal priority memory unblocking 2");
-	// Should schedule proc3 since proc1 was preempted recently
-	TEST_EXPECT(0, test_release_processor());
+	test_transition("Memory blocked", "Memory unblocked");
 
 	test_transition("Set user priority (higher)", "Set user priority (inversion)");
 	for (int i = 0; i < 30 && test_state == "Set user priority (inversion)"; ++i) {
@@ -418,89 +414,7 @@ void proc3(void)
  */
 void proc4(void)
 {
-	for (int iteration = 0;; test_release_processor()) {
-		if (iteration < 3) {
-			++iteration;
-		} else {
-			// We want this process to run at least 3 iterations, before it's "finished".
-			++finished_proc;
-		}
-
-		{
-			// Cycle the priority
-			const int prio = test_get_process_priority(PID_P4);
-			TEST_EXPECT(RTX_OK, test_set_process_priority(PID_P4, (prio + 1) % NULL_PRIO));
-		}
-
-		printf("Doing computations that shouldn't affect other processes\n");
-
-		{
-			// Check the buffer allows word access
-			int *buf = request_memory_block();
-			for (int i = 0; i < 32; ++i) {
-				buf[i] = -1;
-			}
-			for (int i = 0; i < 32; ++i) {
-				buf[((i * i) % 32 + 32) % 32] = i;
-			}
-			// Find square roots mod 32
-			TEST_EXPECT(-1, buf[2]);
-			TEST_EXPECT(31, buf[1]);
-			release_memory_block(buf);
-		}
-
-		{
-			double *buf = request_memory_block();
-			// These values should be stored correctly
-			buf[0] = 1.5;
-			buf[1] = 3. / 2;
-			TEST_EXPECT(1., buf[0] / buf[1]);
-			release_memory_block(buf);
-		}
-	}
-}
-
-// Test stack usage and shared memory works.
-// These processes will use a lot of stack memory and shared memory.
-// They implement quicksort.
-
-#define SORT_SIZE 10
-static volatile unsigned int sort_numbers[SORT_SIZE];
-static volatile int sort_lo = 0, sort_hi = 0;
-
-static void sort_reset() {
-	int is_sorted = 1;
-	for (int i = 1; i < SORT_SIZE; ++i) {
-		is_sorted = is_sorted && sort_numbers[i-1] <= sort_numbers[i];
-	}
-	TEST_ASSERT(is_sorted);
-
-	static unsigned int random = 2429631604U;
-	for (int i = 0; i < SORT_SIZE; ++i) {
-		sort_numbers[i] = random % 3 + 2;
-		random = random * 1664525 + 1013904223;
-	}
-}
-
-/**
- * Recursively quicksort.
- * This uses a lot of stack.
- */
-static void sort_quicksort(int lo, int hi) {
-	if (hi - lo < 1) {
-		return;
-	}
-
-	sort_lo = lo;
-	sort_hi = hi;
-	// Wait for proc6 to finish partitioning
-	while (sort_lo < sort_hi) {
-		test_release_processor();
-	}
-
-	int pivot = sort_lo;
-	sort_quicksort(lo, pivot);
-	sort_quicksort(pivot + 1, hi);
+	infinite_loop();
 }
 
 /**
@@ -510,32 +424,8 @@ static void sort_quicksort(int lo, int hi) {
  */
 void proc5(void)
 {
-	for (int iteration = 0;; test_release_processor()) {
-		if (iteration < 3) {
-			++iteration;
-		} else {
-			// We want this process to run at least 3 iterations, before it's "finished".
-			++finished_proc;
-		}
-
-		sort_reset();
-		sort_quicksort(0, SORT_SIZE);
-	}
+	infinite_loop();
 }
-
-static int sort_partition(volatile unsigned int *arr, int len) {
-	int lo_vals[SORT_SIZE], hi_vals[SORT_SIZE];
-	int num_lo = 0, num_hi = 0;
-	int pivot = arr[0];
-	for (int i = 0; i < len; ++i) {
-		if (arr[i] < pivot) lo_vals[num_lo++] = arr[i];
-		else hi_vals[num_hi++] = arr[i];
-	}
-	for (int i = 0; i < num_lo; ++i) arr[i] = lo_vals[i];
-	for (int i = 0; i < num_hi; ++i) arr[num_lo + i] = hi_vals[i];
-	return num_lo - 1;
-}
-
 /**
  * This process is responsible for quicksort partitioning.
  * This process works with proc5 to test that the user stack is correctly allocated.
@@ -543,21 +433,5 @@ static int sort_partition(volatile unsigned int *arr, int len) {
  */
 void proc6(void)
 {
-
-	for (int iteration = 0;; test_release_processor()) {
-		if (!(sort_lo < sort_hi)) {
-			continue;
-		}
-
-		int pivot = sort_partition(&sort_numbers[sort_lo], sort_hi - sort_lo);
-		sort_lo += pivot;
-		sort_hi = sort_lo;
-
-		if (iteration < 3) {
-			++iteration;
-		} else {
-			// We want this process to run at least 3 iterations, before it's "finished".
-			++finished_proc;
-		}
-	}
+	infinite_loop();
 }
