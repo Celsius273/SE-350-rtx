@@ -57,5 +57,7 @@ void *k_receive_message(int *sender_id);
 
 int k_delayed_send(int sender_pid, void *p_msg_env, int delay);
 
+void k_print_ready_queue(void);
+
 #include "disallow_k.h"
 #endif /* ! K_PROCESS_H_ */
