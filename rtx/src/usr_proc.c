@@ -405,6 +405,7 @@ void proc3(void)
 
 void proc4(void)
 {
+	for (;;) receive_message(NULL);
 	infinite_loop();
 }
 

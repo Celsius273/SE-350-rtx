@@ -139,7 +139,7 @@ bool queue_contains_node(void* pq, pid_t pcb_id) {
 void print_priority_queue(void* pq) {
     pid_pq priority_queue = (pid_pq)pq;
     int x;
-    for (int i = 0; i < NUM_PRIORITIES; i++) {
+    for (int i = 0; i < NULL_PRIO; i++) {
         printf("  Priority %d:", i);
         LL_FOREACH(x, priority_queue[i]) {
             printf(" %d", x);
