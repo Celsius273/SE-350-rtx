@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "uart.h"
 #include "crt.h"
 #include "message_queue.h"

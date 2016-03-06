@@ -17,6 +17,7 @@ void send_message(int pid, MSG_BUF* msg) {
 
 #include <LPC17xx.h>
 #include "uart_polling.h"
+#include "uart.h"
 #include "rtx.h"
 #include "kcd.h"
 
@@ -47,18 +48,18 @@ static int cmd_len = 0;
 // Call uart_iproc_getc until it returns NO_CHAR
 // Calls kcd_process_keyboard_input if appropriate
 static void kcd_handle_keyboard_input(void) {
-	for (int ch; (ch = kcd_process_keyboard_input()) != NO_CHAR;) {
+	for (int ch; (ch = uart_iproc_getc()) != NO_CHAR;) {
 		switch (ch) {
 			case '\n':
 				break;
 			case '\r':
-				msg->mtext[cmd_len] = '\0';
+				msg.mtext[cmd_len] = '\0';
 				kcd_process_keyboard_input(&msg);
 				cmd_len = 0;
 				break;
 			default:
 				if (cmd_len < MTEXT_MAXLEN) {
-					msg->mtext[cmd_len] = ch;
+					msg.mtext[cmd_len] = ch;
 					++cmd_len;
 				}
 		}
