@@ -334,7 +334,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>0</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>0</OneElfS>
@@ -436,6 +436,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\sys_proc.c</FilePath>
             </File>
+            <File>
+              <FileName>crt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\crt.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -480,11 +485,6 @@
               <FileName>message_queue.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\message_queue.c</FilePath>
-            </File>
-            <File>
-              <FileName>crt.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\crt.c</FilePath>
             </File>
           </Files>
         </Group>
