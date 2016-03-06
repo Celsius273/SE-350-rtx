@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "printf.h"
 #include "list.h"
 #include "priority_queue.h"
 
@@ -133,19 +134,21 @@ bool queue_contains_node(void* pq, pid_t pcb_id) {
     return false;
 }
 
-/*
+
 // test print function
 void print_priority_queue(void* pq) {
     pid_pq priority_queue = (pid_pq)pq;
     int x;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
-        printf("Priority %d:\n", i);
+        printf("  Priority %d:", i);
         LL_FOREACH(x, priority_queue[i]) {
-            printf("    PID %d\n", x);
+            printf(" %d", x);
         }
+        printf("\n");
     }
 }
 
+/*
 int main(void) {
     // test code
 

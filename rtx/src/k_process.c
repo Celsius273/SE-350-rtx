@@ -29,9 +29,7 @@
 #include "message_queue.h"
 #include "k_memory.h"
 #include "timer.h"
-
 #include "printf.h"
-
 #include "allow_k.h"
 
 /* ----- Global Variables ----- */
@@ -501,3 +499,13 @@ void disable_irq(void) {
 	__disable_irq();
 	++irq_lock_count;
 }
+
+void k_print_ready_queue(void) {
+	printf("READY PROCESSES:\n");
+	print_priority_queue(g_ready_queue);
+	// READY PROCESSES
+	// <space><space>PID <pid>
+	// print format: processes or (hi - lo):
+	// p
+}
+
