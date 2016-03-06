@@ -19,7 +19,7 @@
 #ifdef HAS_TIMESLICING
 #define NUM_TESTS 122
 #else
-#define NUM_TESTS 121
+#define NUM_TESTS 122
 #endif
 #define GROUP_ID "004"
 
