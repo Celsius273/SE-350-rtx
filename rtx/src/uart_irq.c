@@ -271,8 +271,7 @@ __asm void UART0_IRQHandler(void)
 	IMPORT k_check_preemption
 	PUSH{r4-r11, lr}
 	BL c_UART0_IRQHandler
-	POP{r4-r11, lr}
-	B k_check_preemption
+	POP{r4-r11, pc}
 } 
 /**
  * @brief: c UART0 IRQ Handler
@@ -312,4 +311,5 @@ void c_UART0_IRQHandler(void)
 #endif // DEBUG_0
 	}	
 	enable_irq();
+	k_check_preemption();
 }

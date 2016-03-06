@@ -106,8 +106,7 @@ __asm void TIMER0_IRQHandler(void)
 	IMPORT k_check_preemption_eager
 	PUSH{r4-r11, lr}
 	BL c_TIMER0_IRQHandler
-	POP{r4-r11, lr}
-	B k_check_preemption_eager
+	POP{r4-r11, pc}
 } 
 /**
  * @brief: c TIMER0 IRQ Handler
@@ -125,4 +124,5 @@ void c_TIMER0_IRQHandler(void)
 
 void proc_timer_i(void) {
 	k_check_delayed_messages();
+	k_check_preemption_eager();
 }
