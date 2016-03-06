@@ -295,7 +295,7 @@ void proc1(void)
 	TEST_EXPECT(0, changed_bytes);
 	TEST_ASSERT(finished_proc >= 2);
 	// Wait for proc{4,5,6} to "finish"
-	while (finished_proc < 5) {
+	while (finished_proc < 2) {
 		test_release_processor();
 	}
 
@@ -381,11 +381,6 @@ void proc3(void)
 {
 	printf("Started %s\n", __FUNCTION__);
 
-	// Since proc1 was preempted, it's at the back of the ready queue
-	// Let's run it.
-	test_transition("Equal priority memory unblocking 2", "Equal priority memory unblocked");
-	test_release_processor();
-
 	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");
 	test_mem_request();
 
@@ -407,30 +402,16 @@ void proc3(void)
 	infinite_loop();
 }
 
-/**
- * A test process that theoretically should not affect proc1-proc3.
- * It does calculations and changes its own priority.
- * This test process calls each API function.
- */
 void proc4(void)
 {
 	infinite_loop();
 }
 
-/**
- * This process is responsible for quicksort recursion.
- * This process works with proc6 to test that the user stack is correctly allocated.
- * These two processes use a bunch of stack space and communicate with each other.
- */
 void proc5(void)
 {
 	infinite_loop();
 }
-/**
- * This process is responsible for quicksort partitioning.
- * This process works with proc5 to test that the user stack is correctly allocated.
- * These two processes use a bunch of stack space and communicate with each other.
- */
+
 void proc6(void)
 {
 	infinite_loop();
