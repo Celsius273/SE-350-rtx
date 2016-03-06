@@ -77,6 +77,9 @@ void memory_init(void)
 	gp_heap_end_addr = p_end;
 }
 
+static char __attribute__((aligned(8))) stack_space[10 * 0x200 + 8];
+static int stack_space_begin = 0;
+
 /**
  * @brief: allocate stack for a process, align to 8 bytes boundary
  * @param: size, stack size in bytes
@@ -86,17 +89,10 @@ void memory_init(void)
 
 U32 *alloc_stack(U32 size_b)
 {
-	U32 *sp;
-	sp = gp_stack; /* gp_stack is always 8 bytes aligned */
-
-	/* update gp_stack */
-	gp_stack = (U32 *)((U8 *)sp - size_b);
-
-	/* 8 bytes alignement adjustment to exception stack frame */
-	if ((U32)gp_stack & 0x04) {
-		--gp_stack;
-	}
-	return sp;
+	stack_space_begin += size_b;
+	stack_space_begin = (stack_space_begin + 7) / 8 * 8;
+	assert(stack_space_begin + 8 <= sizeof(stack_space));
+	return stack_space + stack_space_begin;
 }
 
 void *k_request_memory_block(void)

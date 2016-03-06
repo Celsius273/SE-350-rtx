@@ -33,10 +33,10 @@
 #include "allow_k.h"
 
 /* ----- Global Variables ----- */
-
-static PCB process[NUM_PROCS];   /* array of processes */
+#define STATIC
+STATIC PCB process[NUM_PROCS];   /* array of processes */
 const static pid_t PID_NONE = -1;
-static pid_t running = PID_NONE; /* always point to the current RUN process */
+STATIC pid_t running = PID_NONE; /* always point to the current RUN process */
 
 // Array of blocked PIDs
 LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
@@ -67,9 +67,6 @@ const static PROC_INIT g_proc_table[] = {
 	{PID_CLOCK,        HIGHEST,        0x100,        &proc_clock},
 	{PID_KCD,          HIGHEST,        0x100,        &proc_kcd},
 	{PID_CRT,          HIGHEST,      	 0x100,        &proc_crt},
-	// TODO add these
-	{PID_TIMER_IPROC,  IPROC_PRIO,     0x100,        &infinite_loop},
-	{PID_UART_IPROC,   IPROC_PRIO,     0x100,        &infinite_loop},
 };
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
@@ -82,8 +79,7 @@ static void initialize_processes(const PROC_INIT *const inits, int num) {
 		int pid = init->m_pid;
 		// Check to make sure we're not overwriting a process
 		assert(pid < NUM_PROCS);
-		assert(init->m_stack_size);
-		assert(!process[pid].mp_sp);
+		assert(!process[pid].mpf_start_pc);
 		process[pid].m_pid = pid;
 		process[pid].m_state = NEW;
 		process[pid].m_priority = init->m_priority;
@@ -98,7 +94,7 @@ static void initialize_processes(const PROC_INIT *const inits, int num) {
 		for ( j = 0; j < 6; j++ ) { // R0-R3, R12 are cleared with 0
 			*(--sp) = 0x0;
 		}
-	
+
 		assert(sp);
 		process[pid].mp_sp = sp;
 	}
@@ -119,10 +115,15 @@ void process_init()
 	initialize_processes(g_test_procs, NUM_TEST_PROCS);
 	// Make sure we got all the PIDs, or fill them with null
 	for (int i = 0; i < NUM_PROCS; ++i) {
-		if (!process[i].mp_sp) {
-			process[i] = process[PID_NULL];
-			process[i].m_pid = i;
+		if (process[i].mp_sp) {
+			continue;
 		}
+		process[i] = (PCB) {
+			.mp_sp = NULL,
+			.m_pid = i,
+			.m_state = NEW,
+			.m_priority = IPROC_PRIO,
+		};
 	}
 }
 
@@ -164,7 +165,8 @@ static int process_switch(pid_t old_pid)
 	const PROC_STATE_E state = process[running].m_state;
 
 	if (state == NEW) {
-		if (old_pid != PID_NONE && running != old_pid) {
+		if (old_pid != PID_NONE) {
+			assert(running != old_pid);
 			PCB *const p_pcb_old = &process[old_pid];
 			assert(p_pcb_old->m_state != NEW);
 			p_pcb_old->mp_sp = (U32 *) __get_MSP();
