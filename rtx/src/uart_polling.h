@@ -10,10 +10,12 @@
 #include <stdint.h>  /* typedefs */
 #include "uart_def.h"
 
+#if 0
 #define uart0_init()        uart_init(0)  
 #define uart0_get_char()    uart_get_char(0)
 #define uart0_put_char(c)   uart_put_char(0,c)
 #define uart0_put_string(s) uart_put_string(0,s)
+#endif
 
 #define uart1_init()        uart_init(1)  
 #define uart1_get_char()    uart_get_char(1)
