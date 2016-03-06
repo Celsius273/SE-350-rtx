@@ -21,6 +21,8 @@ void proc_crt(void) {
 			// We're unblocked.
 		} else {
 			assert(0);
+			release_memory_block(msg);
+			continue;
 		}
 
 		// Block ourselves

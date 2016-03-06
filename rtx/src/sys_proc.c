@@ -65,6 +65,7 @@ static int crt_printf(const char *fmt, ...) {
 		msg->mtext[MTEXT_MAXLEN] = '\0';
 		va_end(va);
 	}
+	msg->mtype = CRT_DISPLAY;
 	send_message(PID_CRT, msg);
 	return ret;
 }
