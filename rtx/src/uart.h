@@ -60,5 +60,7 @@
      
 /* initialize the n_uart to use interrupt */
 int uart_irq_init(int n_uart);		
+int uart_iproc_getc(void);
+bool uart_iproc_putc(uint8_t ch);
 
 #endif /* ! UART_IRQ_H_ */

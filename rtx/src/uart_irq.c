@@ -21,9 +21,12 @@
 // Whether the uart transmit holding register is empty
 volatile bool uart_thre = false;
 volatile bool uart_iproc_notif_in = false;
+volatile bool uart_iproc_notif_out = false;
 LL_DECLARE(volatile outbuf, uint8_t, 200);
+#define OUTBUF_THRESHOLD 100
 LL_DECLARE(volatile inbuf, uint8_t, 200);
 MSG_BUF notif_in_msg;
+MSG_BUF notif_out_msg;
 
 // Send the input character to the appropriate process(es)
 static void uart_send_input_char(uint8_t ch) {
@@ -38,24 +41,13 @@ static void uart_send_input_char(uint8_t ch) {
 	}
 }
 
-// Read a character, or NO_CHAR
-// Enables input notification if NO_CHAR
-int uart_iproc_getc(void) {
-	int ret;
-	disable_irq();
-	if (LL_SIZE(inbuf) == 0) {
-		uart_iproc_notif_in = true;
-		ret = NO_CHAR;
-	} else {
-		ret = LL_POP_FRONT(inbuf);
-	}
-	enable_irq();
-	return ret;
-}
-
 // Return the next character to output, or NO_CHAR
 static int uart_pop_output_char(void) {
 	if (LL_SIZE(outbuf) == 0) {
+		if (uart_iproc_notif_out) {
+			uart_iproc_notif_out = false;
+			k_send_message(PID_CRT, &notif_out_msg);
+		}
 		return NO_CHAR;
 	}
 	return LL_POP_FRONT(outbuf);
@@ -74,6 +66,40 @@ static void uart_putc_nonblocking(uint8_t ch) {
 		UART(0)->THR = ch;
 	}
 }
+
+// Public UART APIs
+
+// Read a character, or NO_CHAR
+// Enables input notification if NO_CHAR
+int uart_iproc_getc(void) {
+	int ret;
+	disable_irq();
+	if (LL_SIZE(inbuf) == 0) {
+		uart_iproc_notif_in = true;
+		ret = NO_CHAR;
+	} else {
+		ret = LL_POP_FRONT(inbuf);
+	}
+	enable_irq();
+	return ret;
+}
+
+// Write a character, or return 0 if failed
+bool uart_iproc_putc(uint8_t ch) {
+	bool ret;
+	disable_irq();
+	if (LL_SIZE(outbuf) > OUTBUF_THRESHOLD) {
+		uart_iproc_notif_out = true;
+		ret = false;
+	} else {
+		uart_putc_nonblocking(ch);
+		ret = true;
+	}
+	enable_irq();
+	return ret;
+}
+
+// UART low-level handlers
 
 /**
  * @brief: initialize the n_uart
