@@ -86,9 +86,11 @@ static void uart_putc_nonblocking(uint8_t ch) {
 	// LL_SIZE(outbuf) != 0
 	if (!uart_thre) {
 		// Ensure the THRE interrupt is enabled
+		ch = LL_POP_FRONT(outbuf);
 		uart_thre = true;
-		UART(0)->THR = ch;
-		UART(0)->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
+		LPC_UART_TypeDef *pUart = UART(0);
+		pUart->THR = ch;
+		pUart->IER |= IER_THRE; // Interrupt Enable Register: Transmit Holding Register Empty
 	}
 }
 
@@ -291,9 +293,14 @@ void c_UART0_IRQHandler(void)
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
 		uint8_t ch = pUart->RBR;
-		// Echo-back before it's processed
-		uart_putc_nonblocking(ch);
-		uart_send_input_char(ch);
+		if (ch != 127 && ch != '\b') { // skip backspace
+			// Echo-back before it's processed
+			uart_putc_nonblocking(ch);
+			if (ch == '\r') {
+				uart_putc_nonblocking('\n');
+			}
+			uart_send_input_char(ch);
+		}
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
 
