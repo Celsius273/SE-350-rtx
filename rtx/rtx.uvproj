@@ -348,7 +348,7 @@
             <uSurpInc>0</uSurpInc>
             <VariousControls>
               <MiscControls>--c99 --gnu -Ospace</MiscControls>
-              <Define>NDEBUG</Define>
+              <Define>NDEBUG _DEBUG_HOTKEYS HAS_TIMESLICING</Define>
               <Undefine></Undefine>
               <IncludePath></IncludePath>
             </VariousControls>

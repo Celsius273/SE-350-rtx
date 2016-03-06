@@ -123,5 +123,9 @@ void c_TIMER0_IRQHandler(void)
 
 void proc_timer_i(void) {
 	k_check_delayed_messages();
+#ifdef HAS_TIMESLICING
+	k_check_preemption_eager();
+#else
 	k_check_preemption();
+#endif
 }
