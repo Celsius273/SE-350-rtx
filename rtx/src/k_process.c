@@ -314,9 +314,13 @@ void k_check_preemption(void) {
 }
 
 void k_check_preemption_eager(void) {
-	static int millis = 0;
+	disable_irq();
+	static volatile int millis = 0;
+	bool can_preempt = false;
 	millis = (millis + 1) % 100;
-	if (millis == 0) {
+	can_preempt = millis == 0;
+	enable_irq();
+	if (can_preempt) {
 		k_check_preemption_impl(true);
 	}
 }
