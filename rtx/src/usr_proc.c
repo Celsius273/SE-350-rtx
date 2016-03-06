@@ -403,10 +403,12 @@ void proc3(void)
 	infinite_loop();
 }
 
+// Process to show blocked on receive state
 void proc4(void)
 {
-	for (;;) receive_message(NULL);
-	infinite_loop();
+	for (;;) {
+		receive_message(NULL);
+	}
 }
 
 void proc5(void)
