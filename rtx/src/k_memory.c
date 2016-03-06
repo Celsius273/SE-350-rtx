@@ -92,7 +92,7 @@ U32 *alloc_stack(U32 size_b)
 	stack_space_begin += size_b;
 	stack_space_begin = (stack_space_begin + 7) / 8 * 8;
 	assert(stack_space_begin + 8 <= sizeof(stack_space));
-	return stack_space + stack_space_begin;
+	return (U32 *)(stack_space + stack_space_begin);
 }
 
 void *k_request_memory_block(void)

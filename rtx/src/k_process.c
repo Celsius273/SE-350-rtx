@@ -504,35 +504,35 @@ void disable_irq(void) {
 	++irq_lock_count;
 }
 
-void k_print_blocked_on_receive(void) {
-	printf("Blocked on receive:\n");
+#ifdef _DEBUG_HOTKEYS
+void k_print_blocked_on_receive_queue(void) {
+	printf("Blocked on receive processes:\n");
 	for (int prio = 0; prio < NULL_PRIO; ++prio) {
-		printf("Priority %d:", prio);
-		for (int i = 0; i < NUM_PROCS; ++i) {
+		printf("  Priority %d:", prio);
+		for (int i = 0; i <= PID_P6; ++i) {
 			if (prio == process[i].m_priority) {
 				if (BLOCKED_ON_RECEIVE == process[i].m_state) {
-					printf(" %d\n", process[i].m_pid);
+					printf(" %d", process[i].m_pid);
 				}
 			}
 		}
 		printf("\n");
 	}
-	printf("\n");
 }
 void k_print_blocked_on_memory_queue(void) {
-	printf("Blocked on Memory:\n");
+	printf("Blocked on memory processes:\n");
 	print_priority_queue(g_blocked_on_resource_queue);
 }
 
 
 
 void k_print_ready_queue(void) {
-	printf("READY PROCESSES:\n");
+	printf("Ready processes:\n");
 	print_priority_queue(g_ready_queue);
 	// READY PROCESSES
 	// <space><space>PID <pid>
 	// print format: processes or (hi - lo):
 	// p
 }
-
+#endif
 

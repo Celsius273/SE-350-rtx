@@ -40,9 +40,6 @@ static bool check_hotkey(uint8_t ch) {
 		case HOTKEY_BLOCKED_MSG_QUEUE:
 			k_print_blocked_on_receive_queue();
 			return true;
-		case HOTKEY_MSG_LOG:
-			k_print_message_log();
-			break;
 	}
 #endif
 	return false;
@@ -50,9 +47,6 @@ static bool check_hotkey(uint8_t ch) {
 
 // Send the input character to the appropriate process(es)
 static void uart_send_input_char(uint8_t ch) {
-	if (check_hotkey(ch)) {
-		return;
-	}
 	if (LL_SIZE(inbuf) == LL_CAPACITY(inbuf)) {
 		// Drop the character
 		return;
@@ -297,14 +291,16 @@ void c_UART0_IRQHandler(void)
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
-		uint8_t ch = pUart->RBR;
-		if (ch != 127 && ch != '\b') { // skip backspace
-			// Echo-back before it's processed
-			uart_putc_nonblocking(ch);
-			if (ch == '\r') {
-				uart_putc_nonblocking('\n');
+		uint8_t ch = pUart->RBR;		
+		if (!check_hotkey(ch)) {
+			if (ch != 127 && ch != '\b') { // skip backspace
+				// Echo-back before it's processed
+				uart_putc_nonblocking(ch);
+				if (ch == '\r') {
+					uart_putc_nonblocking('\n');
+				}
+				uart_send_input_char(ch);
 			}
-			uart_send_input_char(ch);
 		}
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
