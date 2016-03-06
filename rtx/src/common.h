@@ -49,12 +49,21 @@
 #define LOW     2
 #define LOWEST  3
 #define NULL_PRIO 4
-#define NUM_PRIORITIES 5
+#define IPROC_PRIO 5
+#define NUM_PRIORITIES 6
+
+/* Defining the Hot Keys for debug information */
+
+#define HOTKEY_READY_QUEUE 'a'
+#define HOTKEY_BLOCKED_MEM_QUEUE 'b'
+#define HOTKEY_BLOCKED_MSG_QUEUE 'c'
+
 
 /* Message Types */
 #define DEFAULT 0
 #define KCD_REG 1
-#define CRT_DISPLAY 2
+#define KCD_KEYBOARD_INPUT 2
+#define CRT_DISPLAY 3
 
 #define NO_CHAR (-1)
 
