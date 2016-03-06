@@ -5,7 +5,7 @@
 MSG_BUF *output = NULL;
 int offset = 0;
 
-void proc_crt() {
+void proc_crt(void) {
 	for (;;) {
 		int from = -1;
 		MSG_BUF* msg = receive_message(&from);
