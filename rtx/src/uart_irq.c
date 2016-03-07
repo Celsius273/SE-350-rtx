@@ -269,7 +269,6 @@ __asm void UART0_IRQHandler(void)
 {
 	PRESERVE8
 	IMPORT c_UART0_IRQHandler
-	IMPORT k_check_preemption
 	PUSH{r4-r11, lr}
 	BL c_UART0_IRQHandler
 	POP{r4-r11, pc}
@@ -282,10 +281,6 @@ void c_UART0_IRQHandler(void)
 	disable_irq();
 	uint8_t IIR_IntId;	    // Interrupt ID from IIR 		 
 	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
-	
-#ifdef DEBUG_0
-	uart1_put_string("Entering c_UART0_IRQHandler\n\r");
-#endif // DEBUG_0
 
 	/* Reading IIR automatically acknowledges the interrupt */
 	IIR_IntId = (pUart->IIR) >> 1 ; // skip pending bit in IIR 
