@@ -93,18 +93,18 @@ void set_test_procs() {
 static void test_transition_impl(const char *from, const char *to, int lineno)
 {
 	disable_irq();
-	// Silently allow for non-FIFO ordering, up to MAX_TRIES times
+	// Silently allow for non-FIFO ordering, up to MAX_YIELDS times
 #ifdef HAS_TIMESLICING
-#define MAX_TRIES (NUM_PROCS * 2)
+#define MAX_YIELDS (NUM_PROCS * 2)
 #else
-#define MAX_TRIES (0)
+#define MAX_YIELDS (0)
 #endif
 	const char *const initial_test_state = test_state;
 	const char *prev_test_state = test_state;
-	int tries = 0;
-	for (int i = 0; i < MAX_TRIES && test_state != from; ++i) {
+	int yields = 0;
+	for (int i = 0; i < MAX_YIELDS && test_state != from; ++i) {
 		enable_irq();
-		++tries;
+		++yields;
 		release_processor();
 		disable_irq();
 		if (prev_test_state != test_state) {
@@ -115,14 +115,15 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 #ifdef DEBUG_0
 	if (from != test_state) {
 		printf(
-			"test_transition(%s, %s)\n  expected state %s, but\n  got %s (%s after %d tries)\n",
+			"test_transition(%s, %s)\n  expected state %s, but\n  got %s (%s after %d yields)\n",
 			from,
 			to,
 			from,
 			initial_test_state,
 			test_state,
-			tries
+			yields
 		);
+		assert(0);
 	}
 #endif
 	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
@@ -453,6 +454,7 @@ void proc3(void)
 
 	test_transition("Resource contention (1 blocked again)", "Resource contention resolved");
 	TEST_EXPECT(0, test_set_process_priority(PID_P3, LOWEST));
+	release_processor(); // Go back to proc1
 
 	test_transition("Send other message (2 blocked)", "Send other message (2 and 3 blocked)");
 	TEST_EXPECT(HIGH, test_get_process_priority(PID_P2));
