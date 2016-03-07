@@ -19,16 +19,6 @@ pid_t pop_process(void* pq, int priority) {
     return LL_POP_FRONT(priority_queue[priority]);
 }
 
-pid_t pop_first_process(void* pq) {
-    pid_pq priority_queue = (pid_pq)pq;
-    for (int i = 0; i < NUM_PRIORITIES; i++) {
-        if (LL_SIZE(priority_queue[i]) > 0) {
-            return LL_POP_FRONT(priority_queue[i]);
-        }
-    }
-    return -1;
-}
-
 pid_t peek_process_front(void* pq, int priority) {
     pid_pq priority_queue = (pid_pq)pq;
     if (LL_SIZE(priority_queue[priority]) == 0) {
@@ -58,6 +48,19 @@ pid_t peek_front(void* pq, int *prio) {
     }
     return -1;
 }  
+
+pid_t pop_first_process(void* pq) {
+    pid_pq priority_queue = (pid_pq)pq;
+	int prio;
+	int pid = peek_front(pq, &prio);
+	if (prio == -1) {
+		prio = HIGHEST;
+	}
+	if (pid != -1 && prio >= 0 && prio < NUM_PRIORITIES) {
+		LL_REMOVE(priority_queue[prio], pid);
+	}
+	return pid;
+}
 
 pid_t peek_process_back(void* pq, int priority) {
     pid_pq priority_queue = (pid_pq)pq;
