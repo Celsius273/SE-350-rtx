@@ -37,11 +37,19 @@ static void kcd_process_command_registration(MSG_BUF* message) {
 
 static void kcd_process_keyboard_input(MSG_BUF* message) {
 	char *text = message->mtext;
+	int sent_to_mask = 0;
+	assert(NUM_PROCS <= 8 * sizeof(int));
 	for (MSG_BUF *cur = entries; cur; cur = cur->mp_next) {
 		if (strncmp(text, cur->mtext, strlen(cur->mtext)) == 0) {
+			const int pid = cur->m_send_pid;
+			const int pid_mask = 1 << pid;
+			if (sent_to_mask & pid_mask) {
+				continue;
+			}
+			sent_to_mask |= pid_mask;
 			MSG_BUF *const block = request_memory_block();
 			memcpy(block, message, 128);
-			send_message(cur->m_send_pid, block);
+			send_message(pid, block);
 		}
 	}
 }
