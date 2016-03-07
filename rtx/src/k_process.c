@@ -135,9 +135,6 @@ static void scheduler(void)
 {
 		int peek_priority;
 		int peek_pid = peek_front(g_ready_queue, &peek_priority);
-		if (peek_pid != -1) {
-			peek_priority = process[peek_pid].m_priority;
-		}
 	
 		if(running != PID_NONE && peek_priority > process[running].m_priority &&
 				(process[running].m_state != BLOCKED_ON_RESOURCE && process[running].m_state != BLOCKED_ON_RECEIVE)) {
