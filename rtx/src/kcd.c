@@ -1,4 +1,6 @@
 #include <string.h>
+#include <assert.h>
+#include "k_process.h"
 #include "common.h"
 #include "message_queue.h"
 #include "printf.h"
