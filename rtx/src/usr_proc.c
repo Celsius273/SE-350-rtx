@@ -193,6 +193,7 @@ void proc1(void)
 	test_printf("START\n");
 	test_printf("total %d tests\n", NUM_TESTS);
 
+#ifdef HAS_TIMESLICING
 	test_transition(test_state, "Memory blocking");
 	test_set_process_priority(PID_P1, LOW);
 	// Due to preemption, we can't tell whether we're blocked.
@@ -203,6 +204,27 @@ void proc1(void)
 
 	// We should have been unblocked
 	test_transition("Memory unblocked", "Get priority");
+#else
+	// int test_release_processor();
+	// This primitive transfers the control to the RTX (the calling process voluntarily releases
+	// the processor). The invoking process remains ready to execute and is put at the end of the
+	// ready queue of the same priority. Another process may possibly be selected for execution.
+	test_transition(test_state, "FIFO scheduling");
+	assert(proc2_work_remaining == 3);
+	for (int i = 2; i >= 0; --i) {
+		TEST_EXPECT(0, test_release_processor());
+		TEST_EXPECT(i, proc2_work_remaining);
+		TEST_EXPECT(i, proc3_work_remaining);
+	}
+
+	test_transition("FIFO scheduling", "Equal priority memory blocking");
+	while (test_state == "Equal priority memory blocking") {
+		test_mem_request();
+	}
+
+	// We should have been unblocked
+	test_transition("Equal priority memory unblocked", "Get priority");
+#endif
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P1));
 	TEST_EXPECT(LOWEST, test_get_process_priority(PID_P2));
 	TEST_EXPECT(RTX_ERR, test_get_process_priority(-1));
@@ -224,7 +246,11 @@ void proc1(void)
 	test_transition("Set user priority (no-op)", "Set user priority (higher)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, MEDIUM));
 
+#ifdef HAS_TIMESLICING
 	test_transition("Set user priority (inversion)", "Preempt (inversion)");
+#else
+	test_transition("Set user priority (inversion 2)", "Preempt (inversion)");
+#endif
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, HIGH));
 	test_mem_release();
 
@@ -326,9 +352,10 @@ static void test_receive_42_from_proc1(void)
 void proc2(void)
 {
 	printf("Started %s\n", __FUNCTION__);
-
+#ifdef HAS_TIMESLICING
 	test_transition("Memory blocking", "Memory blocked");
 	test_set_process_priority(PID_P1, LOWEST);
+
 	// Let's free enough memory
 	test_mem_release();
 	test_mem_release();
@@ -338,6 +365,27 @@ void proc2(void)
 	for (int i = 0; i < 30 && test_state == "Set user priority (inversion)"; ++i) {
 		test_mem_request();
 	}
+#else
+	while (proc2_work_remaining > 0) {
+		TEST_EXPECT(proc3_work_remaining, proc2_work_remaining);
+		--proc2_work_remaining;
+		TEST_EXPECT(0, test_release_processor());
+	}
+	test_transition("Equal priority memory blocking", "Equal priority memory unblocking");
+
+	// Let's free enough memory
+	test_mem_release();
+	test_mem_release();
+
+	test_transition("Equal priority memory unblocking", "Equal priority memory unblocking 2");
+	// Should schedule proc3 since proc1 was preempted recently
+	TEST_EXPECT(0, test_release_processor());
+
+	test_transition("Set user priority (higher)", "Set user priority (inversion)");
+	for (int i = 0; i < 3 && test_state == "Set user priority (inversion)"; ++i) {
+		test_mem_request();
+	}
+#endif
 
 	test_transition("Preempt (inversion)", "Set priority preempt (failed)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P1, LOW));
@@ -381,6 +429,21 @@ void proc2(void)
 void proc3(void)
 {
 	printf("Started %s\n", __FUNCTION__);
+#ifndef HAS_TIMESLICING
+	while (proc3_work_remaining > 0) {
+		--proc3_work_remaining;
+		TEST_EXPECT(proc2_work_remaining, proc3_work_remaining);
+		TEST_EXPECT(0, test_release_processor());
+	}
+
+	// Since proc1 was preempted, it's at the back of the ready queue
+	// Let's run it.
+	test_transition("Equal priority memory unblocking 2", "Equal priority memory unblocked");
+	test_release_processor();
+
+	test_transition("Set user priority (inversion)", "Set user priority (inversion 2)");
+	test_release_processor();
+#endif
 
 	test_transition("Resource contention (1 blocked)", "Resource contention (1 and 3 blocked)");
 	test_mem_request();
