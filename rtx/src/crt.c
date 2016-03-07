@@ -5,7 +5,6 @@
 
 MSG_BUF *output = NULL;
 int offset = 0;
-bool blocked_on_uart = false;
 
 void proc_crt(void) {
 	for (;;) {
@@ -17,9 +16,6 @@ void proc_crt(void) {
 		} else if (msg->mtype == CRT_DISPLAY) {
 			msg->m_kdata[0] = 0;
 			enqueue_message(msg, &output);
-			if (blocked_on_uart) {
-				continue;
-			}
 			// We're unblocked.
 		} else if (from == PID_UART_IPROC) {
 			// We're unblocked.
@@ -37,7 +33,6 @@ void proc_crt(void) {
 				// Try to print the next character
 				if (!uart_iproc_putc(output->mtext[offset])) {
 					// Blocked!
-					blocked_on_uart = true;
 					break;
 				}
 				++offset;
@@ -48,6 +43,5 @@ void proc_crt(void) {
 				release_memory_block(empty);
 			}
 		}
-		blocked_on_uart = false;
 	}
 }
