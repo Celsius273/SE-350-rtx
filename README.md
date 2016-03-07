@@ -58,9 +58,11 @@ The test processes were enhanced to test the new IPC primitives.
 Since someone needs to manually test the wall clock process for the keyboard/display messages, the tests can't test the KCD/CRT processes.
 However, any IPC not tested in the wall clock process is tested in the user test processes.
 
-In addition, the strict FIFO ordering requirement was removed because timeslicing can arbitrarily cause a process to be executed out of FIFO order.
+We added timeslicing support, hidden under the `HAS_TIMESLICING` compile-time flag.
+When `HAS_TIMESLICING` is defined, the strict FIFO ordering requirement is removed because timeslicing can arbitrarily cause a process to be executed out of FIFO order.
 The memory blocking behaviour is also much harder to test, due to the non-deterministic preemption, so some of the tests of preemption under memory pressure are relaxed.
-Instead, each test process will release the processor up to `NUM_PROCS` times.
+Instead, each test process will yield the processor a constant number of times to account for non-FIFO scheduling.
+When timeslicing is disabled, everything is tested with FIFO semantics.
 
 ## Wall clock process
 The wall clock process handles user input and shows output to the user, so it has a lot of corner cases with input handling.
