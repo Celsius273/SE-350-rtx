@@ -22,8 +22,8 @@
 volatile bool uart_thre = false;
 volatile bool uart_iproc_notif_in = true;
 volatile bool uart_iproc_notif_out = false;
-LL_DECLARE(volatile outbuf, uint8_t, 400);
-#define OUTBUF_THRESHOLD 200
+LL_DECLARE(volatile outbuf, uint8_t, 200);
+#define OUTBUF_THRESHOLD 100
 LL_DECLARE(volatile inbuf, uint8_t, 200);
 MSG_BUF notif_in_msg;
 MSG_BUF notif_out_msg;
@@ -67,6 +67,7 @@ static int uart_pop_output_char(void) {
 		if (uart_iproc_notif_out) {
 			uart_iproc_notif_out = false;
 			notif_out_msg.mtype = DEFAULT;
+			*(volatile char *)notif_out_msg.mtext = 1;
 			k_send_message_helper(PID_UART_IPROC, PID_CRT, &notif_out_msg);
 		}
 		return NO_CHAR;
@@ -112,7 +113,9 @@ bool uart_iproc_putc(uint8_t ch) {
 	bool ret;
 	disable_irq();
 	if (LL_SIZE(outbuf) > OUTBUF_THRESHOLD) {
-		uart_iproc_notif_out = true;
+		if (*(volatile char *)notif_out_msg.mtext == 0) {
+			uart_iproc_notif_out = true;
+		}
 		ret = false;
 	} else {
 		if (ch == '\n') {

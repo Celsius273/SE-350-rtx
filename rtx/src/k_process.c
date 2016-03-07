@@ -48,7 +48,7 @@ LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 #define g_ready_queue (blocked[RDY])
 
 /* array of message queues (mailbox) for each processes */
-LL_DECLARE(STATIC g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS + 2);
+LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS + 2);
 
 /* delayed queue for messages */
 static message_queue_t g_delayed_msg_queue = NULL;

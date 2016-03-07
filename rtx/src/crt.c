@@ -18,6 +18,9 @@ void proc_crt(void) {
 			enqueue_message(msg, &output);
 			// We're unblocked.
 		} else if (from == PID_UART_IPROC) {
+			disable_irq();
+			*(volatile char *)msg->mtext = 0;
+			enable_irq();
 			// We're unblocked.
 		} else {
 			assert(0);
