@@ -93,11 +93,16 @@ void set_test_procs() {
 static void test_transition_impl(const char *from, const char *to, int lineno)
 {
 	disable_irq();
-	// Silently allow for non-FIFO ordering
+	// Silently allow for non-FIFO ordering, up to MAX_TRIES times
+#ifdef HAS_TIMESLICING
+#define MAX_TRIES (NUM_PROCS * 2)
+#else
+#define MAX_TRIES (0)
+#endif
 	const char *const initial_test_state = test_state;
 	const char *prev_test_state = test_state;
 	int tries = 0;
-	for (int i = 0; i < NUM_PROCS * 2 && test_state != from; ++i) {
+	for (int i = 0; i < MAX_TRIES && test_state != from; ++i) {
 		enable_irq();
 		++tries;
 		release_processor();
@@ -118,7 +123,6 @@ static void test_transition_impl(const char *from, const char *to, int lineno)
 			test_state,
 			tries
 		);
-		assert(0);
 	}
 #endif
 	test_assert(from == test_state, "from == test_state (OS scheduled wrong process)", lineno);
@@ -399,7 +403,7 @@ void proc3(void)
 	infinite_loop();
 }
 
-// Process to show blocked on receive state
+// Process to show blocked on receive state hotkey
 void proc4(void)
 {
 	for (;;) {
@@ -407,12 +411,17 @@ void proc4(void)
 	}
 }
 
+// Process to show ready state hotkey
 void proc5(void)
 {
 	infinite_loop();
 }
 
+// Process to show blocked on memory hotkey
 void proc6(void)
 {
-	infinite_loop();
+	for (;;) {
+		release_memory_block(request_memory_block());
+		release_processor();
+	}
 }
