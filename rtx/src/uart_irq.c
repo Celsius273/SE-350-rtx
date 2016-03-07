@@ -22,8 +22,8 @@
 volatile bool uart_thre = false;
 volatile bool uart_iproc_notif_in = true;
 volatile bool uart_iproc_notif_out = false;
-LL_DECLARE(volatile outbuf, uint8_t, 200);
-#define OUTBUF_THRESHOLD 100
+LL_DECLARE(volatile outbuf, uint8_t, 400);
+#define OUTBUF_THRESHOLD 200
 LL_DECLARE(volatile inbuf, uint8_t, 200);
 MSG_BUF notif_in_msg;
 MSG_BUF notif_out_msg;
