@@ -133,8 +133,8 @@ void process_init()
 
 static void scheduler(void)
 {
-		int peek_priority = NUM_PRIORITIES;
-		int peek_pid = peek_front(g_ready_queue);
+		int peek_priority;
+		int peek_pid = peek_front(g_ready_queue, &peek_priority);
 		if (peek_pid != -1) {
 			peek_priority = process[peek_pid].m_priority;
 		}
@@ -287,6 +287,13 @@ int k_get_process_priority(int process_id) {
 	return p_pcb->m_priority;
 }
 
+int k_internal_get_process_priority(int pid) {
+	if (0 <= pid && pid < NUM_PROCS) {
+		return process[pid].m_priority;
+	}
+	return NUM_PRIORITIES;
+}
+
 static void k_check_preemption_impl(bool is_eager) {
 	if (k_memory_heap_free_blocks() > 0) {
 		copy_queue(g_blocked_on_resource_queue, g_ready_queue);
@@ -299,12 +306,13 @@ static void k_check_preemption_impl(bool is_eager) {
 		}
 	}
 
-	pid_t ready = peek_front(g_ready_queue);
+	int ready_prio;
+	pid_t ready = peek_front(g_ready_queue, &ready_prio);
 
 	if(ready != PID_NONE) {
 		// We know this won't wrap
 		assert(running != PID_NONE);
-		const int delta = process[running].m_priority - (int) process[ready].m_priority;
+		const int delta = process[running].m_priority - ready_prio;
 		if (is_eager ? delta >= 0 : delta > 0){
     	k_release_processor();
 		}

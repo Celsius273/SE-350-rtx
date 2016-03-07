@@ -47,6 +47,7 @@ void k_poll(PROC_STATE_E which);
 // Unblock processes receiving delayed messages.
 // Move the messages to the appropriate queue.
 void k_check_delayed_messages(void);
+int k_internal_get_process_priority(int pid);
 
 // System calls
 int k_set_process_priority(int process_id, int priority);

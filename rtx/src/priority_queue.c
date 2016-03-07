@@ -37,11 +37,14 @@ pid_t peek_process_front(void* pq, int priority) {
     return LL_FRONT(priority_queue[priority]);
 }   
 
-pid_t peek_front(void* pq) {
+pid_t peek_front(void* pq, int *prio) {
+		*prio = NUM_PRIORITIES;
     pid_pq priority_queue = (pid_pq)pq;
     for (int i = 0; i < NUM_PRIORITIES; i++) {
         if (LL_SIZE(priority_queue[i]) > 0) {
-            return LL_FRONT(priority_queue[i]);
+            int pid = LL_FRONT(priority_queue[i]);
+					  *prio = k_internal_get_process_priority(pid);
+					  return pid;
         }
     }
     return -1;

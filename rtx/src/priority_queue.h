@@ -30,7 +30,7 @@ pid_t pop_first_process(void* pq);
 
 pid_t peek_process_front(void* pq, int priority); 
 
-pid_t peek_front(void* pq);
+pid_t peek_front(void* pq, int *priority);
 
 pid_t peek_process_back(void* pq, int priority);
 
