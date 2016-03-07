@@ -66,7 +66,7 @@ static int uart_pop_output_char(void) {
 	if (LL_SIZE(outbuf) == 0) {
 		if (uart_iproc_notif_out) {
 			uart_iproc_notif_out = false;
-			notif_in_msg.mtype = DEFAULT;
+			notif_out_msg.mtype = DEFAULT;
 			k_send_message_helper(PID_UART_IPROC, PID_CRT, &notif_out_msg);
 		}
 		return NO_CHAR;
