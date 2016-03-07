@@ -145,6 +145,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 				clock_h = h;
 				clock_m = m;
 				clock_s = s;
+				++clock_tick;
 				clock_handle_tick(NULL);
 				break;
 			}
