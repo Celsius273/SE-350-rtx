@@ -19,7 +19,8 @@
 #ifdef HAS_TIMESLICING
 #define NUM_TESTS 122
 #else
-#define NUM_TESTS 122
+// Test FIFO ordering
+#define NUM_TESTS 147
 #endif
 #define GROUP_ID "004"
 
@@ -410,6 +411,7 @@ void proc2(void)
 	test_receive_42_from_proc1();
 	test_transition("Receive other message (2 and 3 blocked)", "Receive other message (3 blocked)");
 	TEST_EXPECT(0, test_set_process_priority(PID_P2, LOWEST));
+	release_processor(); // Go to proc2
 
 	test_transition("Receive other message (done)", "Send delayed message");
 	for (int i = 2; i >= 0; --i) {
