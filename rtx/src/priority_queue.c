@@ -44,8 +44,7 @@ pid_t peek_front(void* pq, int *prio) {
 		int hiprio;
 		LL_FOREACH(hiprio, priority_queue[HIGHEST]) {
 				if (hiprio == PID_KCD || hiprio == PID_CRT) {
-						// We don't know if m_priority and the queue are in sync
-					  *prio = k_internal_get_process_priority(hiprio);
+					  *prio = -1;
 						return hiprio;
 				}
 		}
