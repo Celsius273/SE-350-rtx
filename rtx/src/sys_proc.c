@@ -9,6 +9,8 @@
 #include <ucontext.h>
 #include <unistd.h>
 #include <queue>
+#define _vsnprintf vsnprintf
+#define _sscanf sscanf
 typedef struct mem_t{
     // Guarantee 8-byte alignment, the largest common alignment
     int m_val[128 / 4] __attribute__ ((aligned (8)));
@@ -202,6 +204,7 @@ static void test_input(const char *buf) {
 
 static int send_message(int dst, struct msgbuf *msg) {
 	assert(dst == PID_CRT);
+	assert(msg->mtype == CRT_DISPLAY);
 	printf("Test output: %s\n", msg->mtext);
 	strncpy(test_last_line, msg->mtext, MTEXT_MAXLEN);
 	return RTX_OK;
@@ -278,6 +281,8 @@ int main(void)
 	test_sleep();
 	test_sleep();
 	test_expect("Wall clock: 00:00:03\n");
+	test_input("%WT");
+	test_sleep();
 
 	printf("\x1b[1mTesting %%WS\x1b[0m\n");
 	test_input("%WS 12:34:56");
