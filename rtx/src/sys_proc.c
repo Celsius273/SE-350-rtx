@@ -219,10 +219,10 @@ void proc_set_prio(void)
         priority_buf[0] = msg->mtext[6];
 			}
 		else{
-			struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
-			display_msg->mtype = CRT_DISPLAY;
-			printf("Error: illegal parameters: \n\r", display_msg->mtext);
-			send_message(PID_CRT, display_msg);
+			// struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
+			// display_msg->mtype = CRT_DISPLAY;
+			printf("Error: illegal parameters: \n\r");
+			// send_message(PID_CRT, display_msg);
 			release_memory_block(msg);
 			
 			continue;
@@ -236,7 +236,7 @@ void proc_set_prio(void)
     if (ret_val != RTX_OK) {
 			struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
       display_msg->mtype = CRT_DISPLAY;
-      printf("Error: illegal PID or priority.\n\r", display_msg->mtext);
+      printf("Error: illegal PID or priority.\n\r");
             
       send_message(PID_CRT, display_msg);
     }

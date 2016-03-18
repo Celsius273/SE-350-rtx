@@ -515,7 +515,7 @@ void k_print_blocked_on_receive_queue(void) {
 	printf("Blocked on receive processes:\n");
 	for (int prio = 0; prio < NULL_PRIO; ++prio) {
 		printf("  Priority %d:", prio);
-		for (int i = 0; i <= PID_P6; ++i) {
+		for (int i = 0; i <= PID_CRT; ++i) {
 			if (prio == process[i].m_priority) {
 				if (BLOCKED_ON_RECEIVE == process[i].m_state) {
 					printf(" %d", process[i].m_pid);
@@ -540,5 +540,6 @@ void k_print_ready_queue(void) {
 	// print format: processes or (hi - lo):
 	// p
 }
+
 #endif
 
