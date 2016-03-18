@@ -67,6 +67,7 @@ const static PROC_INIT g_proc_table[] = {
 	{PID_CLOCK,        HIGHEST,        0x100,        &proc_clock},
 	{PID_KCD,          HIGHEST,        0x100,        &proc_kcd},
 	{PID_CRT,          HIGHEST,      	 0x100,        &proc_crt},
+	{PID_SET_PRIO,		 HIGHEST,				 0x100,				 &proc_set_prio},
 };
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 

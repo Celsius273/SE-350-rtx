@@ -4,8 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
-#ifdef USR_CLOCK_TEST
 #include <stdlib.h>
+#ifdef USR_CLOCK_TEST
+//#include <stdlib.h>
 #include <ucontext.h>
 #include <unistd.h>
 #include <queue>
@@ -61,7 +62,7 @@ static int crt_printf(const char *fmt, ...) {
 	{
 		va_list va;
 		va_start(va, fmt);
-		ret = _vsnprintf(msg->mtext, MTEXT_MAXLEN, fmt, va);
+		ret = 0;/*_vsnprintf(msg->mtext, MTEXT_MAXLEN, fmt, va);*/
 		msg->mtext[MTEXT_MAXLEN] = '\0';
 		va_end(va);
 	}
@@ -114,7 +115,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 	unsigned int h, m, s;
 	int bytes_read = 0;
 	cmd->mtext[MTEXT_MAXLEN] = '\0';
-	int nread = _sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);
+	int nread = 0;/*_sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);*/
 	if (nread < 1 || nread != (c == 'S' ? 4 : 1)) {
 		// Didn't convert enough
 		c = '\0';
@@ -174,6 +175,72 @@ void proc_clock(void)
 				break;
 		}
 		release_memory_block(msg);
+	}
+}
+
+/*
+* Allowed PIDs: 
+*/
+void proc_set_prio(void)
+{
+	/*register this process with KCD as the handler for the %C command*/
+	kcd_register("%C");
+	
+	/* start receiving and parsing messages */
+	for(;;) {
+		char pid_buf[3] = {'\0'}; //Holds the pid of the process which is max 2 chars and 1 for '\0'
+		char priority_buf[2] = {'\0'};
+		
+		int pid = 0;
+		int priority = 0;
+		//int sender_id = -1;	//Uh?!?!? Why?
+		int sender_id = NULL;
+		int ret_val = 0;
+		
+		struct msgbuf *msg = receive_message(&sender_id);
+		
+		//the first two characters in the mtext array are %C
+		if(msg->mtext[2] == ' '
+			&& msg->mtext[3] >= '0' && msg->mtext[3] <= '9'
+			&& msg->mtext[4] == ' '
+      && msg->mtext[5] >= '0' && msg->mtext[5] <= '3'
+      && msg->mtext[6] == '\0'){
+				pid_buf[0] = msg->mtext[3];
+        priority_buf[0] = msg->mtext[5];
+			} 
+		else if (msg->mtext[2] == ' '
+      && msg->mtext[3] == '1'
+      && msg->mtext[4] >= '0' && msg->mtext[4] <= '3'
+      && msg->mtext[5] == ' '
+      && msg->mtext[6] >= '0' && msg->mtext[6] <= '3'
+      && msg->mtext[7] == '\0'){
+				pid_buf[0] = msg->mtext[3];
+        pid_buf[1] = msg->mtext[4];
+        priority_buf[0] = msg->mtext[6];
+			}
+		else{
+			struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
+			display_msg->mtype = CRT_DISPLAY;
+			printf("Error: illegal parameters: \n\r", display_msg->mtext);
+			send_message(PID_CRT, display_msg);
+			release_memory_block(msg);
+			
+			continue;
+		}
+		
+		pid = atoi(pid_buf);
+    priority = atoi(priority_buf);
+        
+    ret_val = set_process_priority(pid, priority);
+        
+    if (ret_val != RTX_OK) {
+			struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
+      display_msg->mtype = CRT_DISPLAY;
+      printf("Error: illegal PID or priority.\n\r", display_msg->mtext);
+            
+      send_message(PID_CRT, display_msg);
+    }
+    release_memory_block(msg);
 	}
 }
 
