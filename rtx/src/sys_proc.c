@@ -62,7 +62,7 @@ static int crt_printf(const char *fmt, ...) {
 	{
 		va_list va;
 		va_start(va, fmt);
-		ret = 0;/*_vsnprintf(msg->mtext, MTEXT_MAXLEN, fmt, va);*/
+		ret = _vsnprintf(msg->mtext, MTEXT_MAXLEN, fmt, va);
 		msg->mtext[MTEXT_MAXLEN] = '\0';
 		va_end(va);
 	}
@@ -109,51 +109,93 @@ static void clock_handle_tick(struct msgbuf *msg)
 	delayed_send(PID_CLOCK, msg, 1000);
 }
 
+bool check_invalid_chars(char* cmd) {
+    int idx_to_check[] = {4, 5, 7, 8, 10, 11};
+ 
+    for (int i = 0; i < 6; i++) {
+        char to_check = cmd[idx_to_check[i]];
+        char s[] ={to_check, '\0'};
+ 
+        if (to_check != '0' && atoi(s) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+ 
 static void clock_handle_message(struct msgbuf *cmd)
 {
 	char c;
 	unsigned int h, m, s;
-	int bytes_read = 0;
 	cmd->mtext[MTEXT_MAXLEN] = '\0';
-	int nread = 0;/*_sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);*/
-	if (nread < 1 || nread != (c == 'S' ? 4 : 1)) {
-		// Didn't convert enough
-		c = '\0';
-	} else {
-		if (cmd->mtext[bytes_read] != '\0') {
-			printf("Command has trailing data: {%s}\n", cmd->mtext + bytes_read);
-			c = '\0';
-		}
+	// printf("COMMAND: %s\n", cmd->mtext);
+	// printf("COMMAND SIZE: %d\n", strlen(cmd->mtext));
+	if (strlen(cmd->mtext) < 3 || cmd->mtext[0] != '%' || cmd->mtext[1] != 'W') {
+      printf("ERROR: Invalid command\n");
+			return;
+  }
+	c = cmd->mtext[2];
+	int expected_size = (c == 'S') ? 12 : 3;
+	if (strlen(cmd->mtext) != expected_size) {
+		printf("ERROR: Invalid command length or identifier\n");
+		return;
 	}
+
 	switch (c) {
-		case 'T':
+      case 'T':
 			/* The %WT command will cause the wall clock display to be terminated.
 			 */
-			++clock_tick;
-			break;
-		case 'R':
+				++clock_tick;
+				break;
+      case 'R':
 			/* The %WR command will reset the current wall clock time to 00:00:00, starts the clock
 			 * running and causes display of the current wall clock time on the console CRT. The
 			 * display will be updated every second.
 			 */
-			h = m = s = 0;
-		case 'S':
-			/* The %WS hh:mm:ss command sets the current wall clock time to hh:mm:ss, starts
-			 * the clock running and causes display of the current wall clock time on the console
-			 * CRT. The display will be updated every second.
-			 */
-			if (h < 24 && m < 60 && s < 60) {
+				h = m = s = 0;
 				clock_h = h;
 				clock_m = m;
 				clock_s = s;
 				++clock_tick;
 				clock_handle_tick(NULL);
 				break;
-			}
-		default:
-			printf("Invalid command: %s\n", cmd->mtext);
-			break;
-	}
+      case 'S':
+			/* The %WS hh:mm:ss command sets the current wall clock time to hh:mm:ss, starts
+			 * the clock running and causes display of the current wall clock time on the console
+			 * CRT. The display will be updated every second.
+			 */
+          if (cmd->mtext[3] != ' ' || cmd->mtext[6] != ':' || cmd->mtext[9] != ':') {
+              printf("ERROR: Wrong command format\n");
+              break;
+          }
+ 
+          char hStr[] = {cmd->mtext[4],  cmd->mtext[5], '\0'};
+          char mStr[] = {cmd->mtext[7],  cmd->mtext[8], '\0'};
+          char sStr[] = {cmd->mtext[10], cmd->mtext[11], '\0'};
+ 
+          h = atoi(hStr);
+          m = atoi(mStr);
+          s = atoi(sStr);
+ 
+					if (!check_invalid_chars(cmd->mtext)) {
+              printf("ERROR: Detected non-int characters\n");
+              break; // detect non-int characters
+          }
+ 
+          if (h < 24 && m < 60 && s < 60) {
+              clock_h = h;
+              clock_m = m;
+              clock_s = s;
+						  ++clock_tick;
+              clock_handle_tick(NULL);
+              break;
+          }
+          printf("ERROR: Invalid wall clock display values %u:%u:%u\n", h, m, s);
+          break;
+      default:
+          printf("Invalid command: %s\n", cmd->mtext);
+          break;
+    }
 }
 
 /**
