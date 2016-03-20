@@ -15,6 +15,7 @@
 #include "k_process.h"
 #include "usr_proc.h"
 #include "printf.h"
+#include "list.h"
 
 #ifdef HAS_TIMESLICING
 #define NUM_TESTS 122
@@ -94,6 +95,9 @@ void set_test_procs() {
 	g_test_procs[3].mpf_start_pc = &proc4;
 	g_test_procs[4].mpf_start_pc = &proc5;
 	g_test_procs[5].mpf_start_pc = &proc6;
+	g_test_procs[6].mpf_start_pc = &proc_A;
+	g_test_procs[7].mpf_start_pc = &proc_B;
+	g_test_procs[8].mpf_start_pc = &proc_C;
 }
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
@@ -496,7 +500,93 @@ void proc5(void)
 void proc6(void)
 {
 	for (;;) {
-		release_memory_block(request_memory_block());
+		infinite_loop();
+	}
+}
+
+/********************* Stress Test Procs ***********************/
+void proc_A(void)
+{
+    struct msgbuf *p_msg_env = (struct msgbuf *)request_memory_block();
+    p_msg_env->mtype = KCD_REG;
+    strcpy(p_msg_env->mtext, "%Z");
+    send_message(PID_KCD, p_msg_env);
+ 
+    for (;;) {
+        p_msg_env = receive_message(NULL);
+        if(strstr(p_msg_env->mtext, "%Z") != NULL) {
+            release_memory_block(p_msg_env);
+            break;
+        } else {
+            release_memory_block(p_msg_env);
+        }
+    }
+		printf("Got command %Z\n");
+		
+		int num = 0;
+    for (;;) {
+        p_msg_env = (struct msgbuf *)request_memory_block();
+        p_msg_env->mtype = COUNT_REPORT;
+				_sprintf(p_msg_env->mtext, "%d", num);
+				printf("proc_A sending message #%d\n", num);
+        send_message(PID_B, p_msg_env);
+				printf("proc_A sent message #%d\n", num);
+        num++;
+        release_processor();
+    }
+}
+
+void proc_B(void)
+{
+    for (;;) {
+        struct msgbuf *msg = receive_message(NULL);
+				printf("proc_B sending message to proc_C: %s\n", msg->mtext);
+        send_message(PID_C, msg);
+    }
+}
+
+LL_DECLARE(static c_message_queue, MSG_BUF *, NUM_MEM_BLOCKS + 2);
+
+static MSG_BUF* hibernate(void) {
+	q->mtype = WAKEUP_10;
+	delayed_send(PID_C, q, 10000);
+
+	for (;;) {
+		struct msgbuf* p = (struct msgbuf*)receive_message(NULL);
+		if(p->mtype == WAKEUP_10) {
+			return p;
+		}
+		
+		LL_PUSH_BACK(c_message_queue, p);
+	}
+}
+
+void proc_C(void) {
+	// Request a memory block for hibernation.
+	struct msgbuf *q = (struct msgbuf *)request_memory_block();
+	
+	for(;;) {
+		struct msgbuf* msg = NULL;
+		if (LL_SIZE(c_message_queue) == 0) {
+			msg = receive_message(NULL);	
+		}
+		else {
+			msg = LL_POP_FRONT(c_message_queue);
+		}
+
+		if(msg->mtype == COUNT_REPORT) {
+			int count = atoi(msg->mtext);
+			if(count % 20 == 0) {
+				msg->mtype = CRT_DISPLAY;
+				strcpy(msg->mtext, "Process C\n");
+				send_message(PID_CRT, msg);
+				
+				msg = hibernate();
+				
+			}
+		}
+		
+		release_memory_block(msg);
 		release_processor();
 	}
 }

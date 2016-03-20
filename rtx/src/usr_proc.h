@@ -15,5 +15,8 @@ void proc3(void);
 void proc4(void);
 void proc5(void);
 void proc6(void);
+void proc_A(void);
+void proc_B(void);
+void proc_C(void);
 
 #endif /* USR_PROC_H_ */

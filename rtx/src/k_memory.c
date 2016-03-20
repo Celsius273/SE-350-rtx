@@ -77,7 +77,7 @@ void memory_init(void)
 	gp_heap_end_addr = p_end;
 }
 
-static char __attribute__((aligned(8))) stack_space[10 * 0x200 + 8];
+static char __attribute__((aligned(8))) stack_space[12 * 0x200 + 8];
 static int stack_space_begin = 0;
 
 /**
