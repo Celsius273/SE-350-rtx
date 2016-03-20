@@ -39,13 +39,15 @@ const static pid_t PID_NONE = -1;
 STATIC pid_t running = PID_NONE; /* always point to the current RUN process */
 
 // Array of blocked PIDs
-LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
+//LL_DECLARE(static blocked[NUM_PROC_STATES][NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of list of processes that are in BLOCKED_ON_RESOURCE state, one for each priority */
-#define g_blocked_on_resource_queue (blocked[BLOCKED_ON_RESOURCE])
+//#define g_blocked_on_resource_queue (blocked[BLOCKED_ON_RESOURCE])
+LL_DECLARE(static g_blocked_on_resource_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of list of processes that are in RDY state, one for each priority */
-#define g_ready_queue (blocked[RDY])
+//#define g_ready_queue (blocked[RDY])
+LL_DECLARE(static g_ready_queue[NUM_PRIORITIES], pid_t, NUM_PROCS);
 
 /* array of message queues (mailbox) for each processes */
 LL_DECLARE(static g_message_queues[NUM_PROCS], MSG_BUF *, NUM_MEM_BLOCKS + 2);
@@ -515,7 +517,7 @@ void k_print_blocked_on_receive_queue(void) {
 	printf("Blocked on receive processes:\n");
 	for (int prio = 0; prio < NULL_PRIO; ++prio) {
 		printf("  Priority %d:", prio);
-		for (int i = 0; i <= PID_B; ++i) {
+		for (int i = 0; i <= PID_CRT; ++i) {
 			if (prio == process[i].m_priority) {
 				if (BLOCKED_ON_RECEIVE == process[i].m_state) {
 					printf(" %d", process[i].m_pid);

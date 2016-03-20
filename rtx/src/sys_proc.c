@@ -159,7 +159,7 @@ static void clock_handle_message(struct msgbuf *cmd)
 				++clock_tick;
 				clock_handle_tick(NULL);
 				break;
-      case 'S':
+      case 'S': {
 			/* The %WS hh:mm:ss command sets the current wall clock time to hh:mm:ss, starts
 			 * the clock running and causes display of the current wall clock time on the console
 			 * CRT. The display will be updated every second.
@@ -192,6 +192,7 @@ static void clock_handle_message(struct msgbuf *cmd)
           }
           printf("ERROR: Invalid wall clock display values %u:%u:%u\n", h, m, s);
           break;
+				}
       default:
           printf("Invalid command: %s\n", cmd->mtext);
           break;

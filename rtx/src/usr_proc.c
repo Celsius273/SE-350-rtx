@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include "rtx.h"
 #include "common.h"
 #include "k_process.h"
@@ -98,6 +100,9 @@ void set_test_procs() {
 	g_test_procs[6].mpf_start_pc = &proc_A;
 	g_test_procs[7].mpf_start_pc = &proc_B;
 	g_test_procs[8].mpf_start_pc = &proc_C;
+	g_test_procs[6].m_priority=HIGH;
+	g_test_procs[8].m_priority=LOWEST;
+	g_test_procs[7].m_priority=LOW;
 }
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
@@ -507,82 +512,142 @@ void proc6(void)
 /********************* Stress Test Procs ***********************/
 void proc_A(void)
 {
-    struct msgbuf *p_msg_env = (struct msgbuf *)request_memory_block();
-    p_msg_env->mtype = KCD_REG;
-    strcpy(p_msg_env->mtext, "%Z");
-    send_message(PID_KCD, p_msg_env);
- 
-    for (;;) {
-        p_msg_env = receive_message(NULL);
-        if(strstr(p_msg_env->mtext, "%Z") != NULL) {
-            release_memory_block(p_msg_env);
-            break;
-        } else {
-            release_memory_block(p_msg_env);
-        }
-    }
-		printf("Got command %Z\n");
-		
-		int num = 0;
-    for (;;) {
-        p_msg_env = (struct msgbuf *)request_memory_block();
-        p_msg_env->mtype = COUNT_REPORT;
-				_sprintf(p_msg_env->mtext, "%d", num);
-				printf("proc_A sending message #%d\n", num);
-        send_message(PID_B, p_msg_env);
-				printf("proc_A sent message #%d\n", num);
-        num++;
-        release_processor();
-    }
+	// Process A:
+	// p <- request_memory_block
+  // register with Command Decoder as handler of %Z commands
+	struct msgbuf *p_msg_env = (struct msgbuf *)request_memory_block();
+	p_msg_env->mtype = KCD_REG;
+	strcpy(p_msg_env->mtext, "%Z");
+	send_message(PID_KCD, p_msg_env);
+
+	for (;;) {
+		// p <- receive a message
+		// if the message(p) contains the %Z command then
+		//   release_memory_block(p)
+		//   exit the loop
+		// else
+		//   release_memory_block(p)
+		// endif
+		p_msg_env = receive_message(NULL);
+		if(strstr(p_msg_env->mtext, "%Z") != NULL) {
+			release_memory_block(p_msg_env);
+			break;
+		} else {
+			release_memory_block(p_msg_env);
+		}
+	}
+	printf("Got command %Z\n");
+	// Second loop:
+	// num = 0
+	int num = 0;
+	for (;;) {
+		// p <- request memory block to be used as a message envelope
+		// set message_type field of p to count_report
+		// set msg_data[0] field of p to num
+		// send the message(p) to process B
+		// num = num + 1
+		// release_processor()
+		p_msg_env = (struct msgbuf *)request_memory_block();
+		p_msg_env->mtype = COUNT_REPORT;
+		_sprintf(p_msg_env->mtext, "%d", num);
+		printf("proc_A sending message #%d\n", num);
+		send_message(PID_B, p_msg_env);
+		printf("proc_A sent message #%d\n", num);
+		num++;
+		release_processor();
+	}
+	// note that Process A does not de-allocate
+	// any received envelopes in the second loop
 }
 
 void proc_B(void)
 {
-    for (;;) {
-        struct msgbuf *msg = receive_message(NULL);
-				printf("proc_B sending message to proc_C: %s\n", msg->mtext);
-        send_message(PID_C, msg);
-    }
+	// loop forever
+	// receive a message
+	// send the message to process C
+	// endloop
+	for (;;) {
+		struct msgbuf *msg = receive_message(NULL);
+		printf("proc_B sending message to proc_C: %s\n", msg->mtext);
+		send_message(PID_C, msg);
+	}
 }
 
 LL_DECLARE(static c_message_queue, MSG_BUF *, NUM_MEM_BLOCKS + 2);
 
-static MSG_BUF* hibernate(void) {
+/**
+ * Hibernate for 10 seconds.
+ * Takes a message envelope (memory block) q and sends it to itself.
+ * `hibernate` returns after the message has been received again.
+ * Does not free `q`.
+ * Note: hibernate changes the message mtype
+ */
+static void hibernate(MSG_BUF *q) {
+	// request a delayed_send for 10 sec delay with msg_type=wakeup10 using q
 	q->mtype = WAKEUP_10;
 	delayed_send(PID_C, q, 10000);
 
+	// loop forever
+	// p <- receive a message //block and let other processes execute
+	//   if (message_type of p == wakeup10) then
+	//     exit this loop
+	//   else
+	//     put message (p) on the local message queue for later processing
+	//   endif
+	// endloop
 	for (;;) {
 		struct msgbuf* p = (struct msgbuf*)receive_message(NULL);
 		if(p->mtype == WAKEUP_10) {
-			return p;
+			assert(p == q);
+			break;
+		} else {
+			LL_PUSH_BACK(c_message_queue, p);
 		}
-		
-		LL_PUSH_BACK(c_message_queue, p);
 	}
 }
 
 void proc_C(void) {
-	// Request a memory block for hibernation.
-	struct msgbuf *q = (struct msgbuf *)request_memory_block();
-	
+	// perform any needed initialization and create a local message queue
+	// If process A has higher priority, then we could be out of
+	//   memory blocks right now. So, we can't request memory here.
+	bool hibernate_for_10_sec = false;
+
 	for(;;) {
 		struct msgbuf* msg = NULL;
+		// if (local message queue is empty) then
+		//  	p <- receive a message
+		// else
+		//	 p <- dequeue the first message from the local message queue
+		// endif
 		if (LL_SIZE(c_message_queue) == 0) {
 			msg = receive_message(NULL);	
-		}
-		else {
+		} else {
 			msg = LL_POP_FRONT(c_message_queue);
 		}
 
-		if(msg->mtype == COUNT_REPORT) {
+		// if msg_type of p == count_report then
+		//   if msg_data[0] of p is evenly divisible by 20 then
+		//     send "Process C" to CRT display using msg envelope p
+		//     hibernate for 10 sec
+		//   endif
+		// endif
+		if (msg->mtype == COUNT_REPORT) {
 			int count = atoi(msg->mtext);
-			if(count % 20 == 0) {
+
+			if (hibernate_for_10_sec) {
+				hibernate_for_10_sec = false;
+				hibernate(msg);
+			}
+
+			if (count % 20 == 0) {
 				msg->mtype = CRT_DISPLAY;
 				strcpy(msg->mtext, "Process C\n");
 				send_message(PID_CRT, msg);
-				
-				msg = hibernate();
-				
+				msg = NULL;
+
+				hibernate_for_10_sec = true;
+				// Don't free the memory block, since it's set
+				continue;
 			}
 		}
 		
