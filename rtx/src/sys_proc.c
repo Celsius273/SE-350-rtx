@@ -223,6 +223,7 @@ void proc_clock(void)
 	}
 }
 
+#ifndef USR_CLOCK_TEST
 /*
 * Allowed PIDs: 
 */
@@ -288,6 +289,7 @@ void proc_set_prio(void)
     release_memory_block(msg);
 	}
 }
+#endif
 
 #ifdef USR_CLOCK_TEST
 static char test_last_line[MTEXT_MAXLEN + 1];
