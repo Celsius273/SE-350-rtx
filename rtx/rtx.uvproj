@@ -486,6 +486,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\message_queue.c</FilePath>
             </File>
+            <File>
+              <FileName>k_cycle_count.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_cycle_count.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -989,6 +994,11 @@
               <FileName>message_queue.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\message_queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>k_cycle_count.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\k_cycle_count.c</FilePath>
             </File>
           </Files>
         </Group>

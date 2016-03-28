@@ -60,10 +60,5 @@ extern int k_delayed_send(int pid, void *p_msg, int delay);
 #define delayed_send(pid, p_msg, delay) _delayed_send((U32)k_delayed_send, pid, p_msg, delay)
 extern int _delayed_send(U32 p_func, int pid, void *p_msg, int delay) __SVC_0;  
 
-/* Cycle Count Service */
-extern int k_get_cycle_count24(void);
-#define get_cycle_count24() _get_cycle_count24((U32)k_get_cycle_count24)
-extern int _get_cycle_count24(U32 p_func) __SVC_0;  
-
 #include "disallow_k.h"
 #endif /* !RTX_H_ */
