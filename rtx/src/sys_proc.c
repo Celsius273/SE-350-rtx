@@ -4,8 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
-#ifdef USR_CLOCK_TEST
 #include <stdlib.h>
+#ifdef USR_CLOCK_TEST
+//#include <stdlib.h>
 #include <ucontext.h>
 #include <unistd.h>
 #include <queue>
@@ -110,51 +111,94 @@ static void clock_handle_tick(struct msgbuf *msg)
 	delayed_send(PID_CLOCK, msg, 1000);
 }
 
+bool check_invalid_chars(char* cmd) {
+    int idx_to_check[] = {4, 5, 7, 8, 10, 11};
+ 
+    for (int i = 0; i < 6; i++) {
+        char to_check = cmd[idx_to_check[i]];
+        char s[] ={to_check, '\0'};
+ 
+        if (to_check != '0' && atoi(s) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+ 
 static void clock_handle_message(struct msgbuf *cmd)
 {
 	char c;
 	unsigned int h, m, s;
-	int bytes_read = 0;
 	cmd->mtext[MTEXT_MAXLEN] = '\0';
-	int nread = _sscanf(cmd->mtext, "%%W%c%n %u:%u:%u%n", &c, &bytes_read, &h, &m, &s, &bytes_read);
-	if (nread < 1 || nread != (c == 'S' ? 4 : 1)) {
-		// Didn't convert enough
-		c = '\0';
-	} else {
-		if (cmd->mtext[bytes_read] != '\0') {
-			printf("Command has trailing data: {%s}\n", cmd->mtext + bytes_read);
-			c = '\0';
-		}
+	// printf("COMMAND: %s\n", cmd->mtext);
+	// printf("COMMAND SIZE: %d\n", strlen(cmd->mtext));
+	if (strlen(cmd->mtext) < 3 || cmd->mtext[0] != '%' || cmd->mtext[1] != 'W') {
+      printf("ERROR: Invalid command\n");
+			return;
+  }
+	c = cmd->mtext[2];
+	int expected_size = (c == 'S') ? 12 : 3;
+	if (strlen(cmd->mtext) != expected_size) {
+		printf("ERROR: Invalid command length or identifier\n");
+		return;
 	}
+
 	switch (c) {
-		case 'T':
+      case 'T':
 			/* The %WT command will cause the wall clock display to be terminated.
 			 */
-			++clock_tick;
-			break;
-		case 'R':
+				++clock_tick;
+				break;
+      case 'R':
 			/* The %WR command will reset the current wall clock time to 00:00:00, starts the clock
 			 * running and causes display of the current wall clock time on the console CRT. The
 			 * display will be updated every second.
 			 */
-			h = m = s = 0;
-		case 'S':
-			/* The %WS hh:mm:ss command sets the current wall clock time to hh:mm:ss, starts
-			 * the clock running and causes display of the current wall clock time on the console
-			 * CRT. The display will be updated every second.
-			 */
-			if (h < 24 && m < 60 && s < 60) {
+				h = m = s = 0;
 				clock_h = h;
 				clock_m = m;
 				clock_s = s;
 				++clock_tick;
 				clock_handle_tick(NULL);
 				break;
-			}
-		default:
-			printf("Invalid command: %s\n", cmd->mtext);
-			break;
-	}
+      case 'S': {
+			/* The %WS hh:mm:ss command sets the current wall clock time to hh:mm:ss, starts
+			 * the clock running and causes display of the current wall clock time on the console
+			 * CRT. The display will be updated every second.
+			 */
+          if (cmd->mtext[3] != ' ' || cmd->mtext[6] != ':' || cmd->mtext[9] != ':') {
+              printf("ERROR: Wrong command format\n");
+              break;
+          }
+ 
+          char hStr[] = {cmd->mtext[4],  cmd->mtext[5], '\0'};
+          char mStr[] = {cmd->mtext[7],  cmd->mtext[8], '\0'};
+          char sStr[] = {cmd->mtext[10], cmd->mtext[11], '\0'};
+ 
+          h = atoi(hStr);
+          m = atoi(mStr);
+          s = atoi(sStr);
+ 
+					if (!check_invalid_chars(cmd->mtext)) {
+              printf("ERROR: Detected non-int characters\n");
+              break; // detect non-int characters
+          }
+ 
+          if (h < 24 && m < 60 && s < 60) {
+              clock_h = h;
+              clock_m = m;
+              clock_s = s;
+						  ++clock_tick;
+              clock_handle_tick(NULL);
+              break;
+          }
+          printf("ERROR: Invalid wall clock display values %u:%u:%u\n", h, m, s);
+          break;
+				}
+      default:
+          printf("Invalid command: %s\n", cmd->mtext);
+          break;
+    }
 }
 
 /**
@@ -176,6 +220,72 @@ void proc_clock(void)
 				break;
 		}
 		release_memory_block(msg);
+	}
+}
+
+/*
+* Allowed PIDs: 
+*/
+void proc_set_prio(void)
+{
+	/*register this process with KCD as the handler for the %C command*/
+	kcd_register("%C");
+	
+	/* start receiving and parsing messages */
+	for(;;) {
+		char pid_buf[3] = {'\0'}; //Holds the pid of the process which is max 2 chars and 1 for '\0'
+		char priority_buf[2] = {'\0'};
+		
+		int pid = 0;
+		int priority = 0;
+		//int sender_id = -1;	//Uh?!?!? Why?
+		int sender_id = NULL;
+		int ret_val = 0;
+		
+		struct msgbuf *msg = receive_message(&sender_id);
+		
+		//the first two characters in the mtext array are %C
+		if(msg->mtext[2] == ' '
+			&& msg->mtext[3] >= '0' && msg->mtext[3] <= '9'
+			&& msg->mtext[4] == ' '
+      && msg->mtext[5] >= '0' && msg->mtext[5] <= '3'
+      && msg->mtext[6] == '\0'){
+				pid_buf[0] = msg->mtext[3];
+        priority_buf[0] = msg->mtext[5];
+			} 
+		else if (msg->mtext[2] == ' '
+      && msg->mtext[3] == '1'
+      && msg->mtext[4] >= '0' && msg->mtext[4] <= '3'
+      && msg->mtext[5] == ' '
+      && msg->mtext[6] >= '0' && msg->mtext[6] <= '3'
+      && msg->mtext[7] == '\0'){
+				pid_buf[0] = msg->mtext[3];
+        pid_buf[1] = msg->mtext[4];
+        priority_buf[0] = msg->mtext[6];
+			}
+		else{
+			// struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
+			// display_msg->mtype = CRT_DISPLAY;
+			printf("Error: illegal parameters: \n\r");
+			// send_message(PID_CRT, display_msg);
+			release_memory_block(msg);
+			
+			continue;
+		}
+		
+		pid = atoi(pid_buf);
+    priority = atoi(priority_buf);
+        
+    ret_val = set_process_priority(pid, priority);
+        
+    if (ret_val != RTX_OK) {
+			struct msgbuf *display_msg = (struct msgbuf *)request_memory_block();
+      display_msg->mtype = CRT_DISPLAY;
+      printf("Error: illegal PID or priority.\n\r");
+            
+      send_message(PID_CRT, display_msg);
+    }
+    release_memory_block(msg);
 	}
 }
 

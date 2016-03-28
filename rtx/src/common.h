@@ -22,7 +22,7 @@
 #endif
 #define RTX_ERR -1
 #define RTX_OK 0
-#define NUM_TEST_PROCS 6
+#define NUM_TEST_PROCS 9
 
 /* Process IDs */
 #define PID_NULL 0
@@ -66,6 +66,8 @@
 #define KCD_REG 1
 #define KCD_KEYBOARD_INPUT 2
 #define CRT_DISPLAY 3
+#define COUNT_REPORT 4
+#define WAKEUP_10 5
 
 #define NO_CHAR (-1)
 
