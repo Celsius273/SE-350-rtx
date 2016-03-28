@@ -1,15 +1,21 @@
 #ifndef K_CYCLE_COUNT_H_
 #define K_CYCLE_COUNT_H_
 
+#include <LPC17xx.h>
+
 void k_cycle_count_init(void);
 
+#ifdef USE_SYSTICK
 // Systick regs
 #define STCSR ((volatile unsigned *)0xE000E010)
 #define STRVR ((volatile unsigned *)0xE000E014)
 #define STCVR ((volatile unsigned *)0xE000E018)
 #define get_cycle_count24() (*STCVR)
+#else
+#define get_cycle_count24() (LPC_TIM1->TC)
+#endif
 
-unsigned cycle_count_difference(unsigned STCVR1, unsigned STCVR2);
+unsigned cycle_count_difference(unsigned begin, unsigned end);
 
 // Taken from NXP/LPC17xx/system_LPC17xx.c
 // Copyright (C) 2009-2012 ARM Limited. All rights reserved.
