@@ -10,6 +10,7 @@
 #include "uart.h"
 #include "k_memory.h"
 #include "k_process.h"
+#include "k_cycle_count.h"
 #include "timer.h"
 
 #include "allow_k.h"
@@ -17,6 +18,7 @@
 void k_rtx_init(void)
 {
 	disable_irq();
+	k_cycle_count_init();
 	uart_irq_init(0);   // uart0, interrupt-driven 
 	uart1_init();       // uart1, polling
 	timer_init(0);

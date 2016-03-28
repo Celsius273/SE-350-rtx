@@ -15,6 +15,7 @@
 #include "rtx.h"
 #include "common.h"
 #include "k_process.h"
+#include "k_cycle_count.h"
 #include "usr_proc.h"
 #include "printf.h"
 #include "list.h"
@@ -100,9 +101,6 @@ void set_test_procs() {
 	g_test_procs[6].mpf_start_pc = &proc_A;
 	g_test_procs[7].mpf_start_pc = &proc_B;
 	g_test_procs[8].mpf_start_pc = &proc_C;
-	g_test_procs[6].m_priority=HIGH;
-	g_test_procs[8].m_priority=LOWEST;
-	g_test_procs[7].m_priority=LOW;
 }
 
 static void test_transition_impl(const char *from, const char *to, int lineno)
@@ -201,6 +199,45 @@ static int test_get_process_priority(int pid) {
 	const int prio = get_process_priority(pid);
 	printf("Process %d has prio %d\n", pid, prio);
 	return prio;
+}
+
+#define TEST_TIME(stmt) do {\
+	unsigned before = get_cycle_count24();\
+	stmt;\
+	unsigned after = get_cycle_count24();\
+	printf(\
+		"%s: \"%s\" took %u cycles at %u Hz\n",\
+		__FUNCTION__,\
+		#stmt,\
+		cycle_count_difference(before, after),\
+		__CORE_CLK\
+	);\
+} while (0)
+
+static void test_time_primitives(int caller_pid) {
+	const int iterations = 3;
+	printf("Testing primitives, running %d iterations\n", iterations);
+	for (int iteration = 0; iteration < iterations; ++iteration) {
+		// Test doing nothing
+		TEST_TIME();
+
+		// Test request_memory_block
+		MSG_BUF *p;
+		TEST_TIME(p = request_memory_block());
+
+		// Test send_message
+		p->mtype = DEFAULT;
+		TEST_TIME(send_message(caller_pid, p));
+		
+		// Test receive_message
+		int sender = -1;
+		MSG_BUF *q;
+		TEST_TIME(q = receive_message(&sender));
+		assert(p == q);
+		
+		release_memory_block(p);
+		p = q = NULL;
+	}
 }
 
 #define MIN_MEM_BLOCKS 5
@@ -352,6 +389,8 @@ void proc1(void)
 	assert(NUM_TESTS == tests_ran);
 	test_printf("END\n");
 	finished = 1;
+	
+	test_time_primitives(PID_P1);
 	infinite_loop();
 }
 
